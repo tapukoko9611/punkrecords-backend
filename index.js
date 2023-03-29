@@ -21,12 +21,6 @@ const  socketIO = require("socket.io")(http, {
     }
 });
 
-app.use(express.static(path.join(__dirname, 'build')));
-
-app.get('/*', function(req,res) {
-        res.sendFile(path.join(__dirname, 'build', 'index.html'));
-});
-
 
 app.get("/trail", (req, res) => {
     res.json({"msg": "The first MF step: doneee"});
