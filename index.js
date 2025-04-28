@@ -3,7 +3,7 @@ const cors = require('cors');
 
 const connectDB = require("./config/db");
 
-const addaRoutes = require("./routes/addaRoutes");
+const roomRoutes = require("./routes/roomRoutes");
 const storageRoutes = require("./routes/storageRoutes");
 const Storage = require("./models/storageModel");
 const path = require("path");
@@ -23,7 +23,7 @@ const  socketIO = require("socket.io")(http, {
 
 
 app.get("/trail", (req, res) => {
-    res.json({"msg": "The first MF step: doneee"});
+    res.json({"msg": "The first step: doneee"});
 });
 
 app.get("/wtf/ign/:query", async (req, res) => {
@@ -56,7 +56,7 @@ app.get("/wtf/ign/:query", async (req, res) => {
     }
 })
 
-app.use("/wtf/adda", addaRoutes);
+app.use("/wtf/room", roomRoutes);
 app.use("/wtf/storage", storageRoutes);
 
 

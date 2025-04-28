@@ -2,22 +2,29 @@ const mongoose = require("mongoose");
 
 const messageModel = mongoose.Schema(
     {
-        session: {
+        // session: {
+        //     type: mongoose.Schema.Types.ObjectId,
+        //     ref: "Session",
+        // },
+        fromUser: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "Session",
+            ref: "User"
         },
-        adda: {
+        roomId: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "Adda"
+            ref: "Room"
         },
         body: {
             type: String,
         },
-        time: {
-            type: Date,
-            default: Date.now,
+        replyTo: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Message"
         },
     },
+    {
+        timestamps: true,
+    }
 );
 
 const Message = mongoose.model("Message", messageModel);

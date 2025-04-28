@@ -16,7 +16,7 @@ const connectDB = async () => {
 
 const Device = require("../models/deviceModel");
 const Session = require("../models/sessionModel");
-const Adda = require("../models/addaModel");
+const Room = require("../models/roomModel");
 //const Message = require("../models/messageModel");
 const Storage = require("../models/storageModel");
 //const Snippet = require("../models/snippetModel");

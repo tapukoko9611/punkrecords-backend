@@ -2,21 +2,21 @@ const asyncHandler = require("express-async-handler");
 
 const Device = require("../models/deviceModel");
 const Session = require("../models/sessionModel");
-const Adda = require("../models/addaModel");
+const Room = require("../models/roomModel");
 
-const find = async (addaId) => {
+const find = async (roomId) => {
     try {
-        var adda = await Adda.findOne({
-            name: addaId,
+        var room = await Room.findOne({
+            name: roomId,
         });
 
-        if(!adda) {
-            adda = await Adda.create({
-                name: addaId,
+        if(!room) {
+            room = await Room.create({
+                name: roomId,
             });
         }
 
-        return adda;
+        return room;
     }
     catch (err) {
         return null;
@@ -25,22 +25,22 @@ const find = async (addaId) => {
 
 const post = asyncHandler ( async (req, res) => {
     try {
-        var addaId = req.params.addaId;
+        var roomId = req.params.roomId;
         var { text } = req.body;
 
-        const adda = await find(addaId);
-        if (!adda) {
+        const room = await find(roomId);
+        if (!room) {
             throw new Error("Problem");
         }
 
-        adda.chat = [
-            ...adda.chat, 
+        room.chat = [
+            ...room.chat, 
             {
                 session: req.session,
                 text: text,
             },
         ];
-        await adda.save();
+        await room.save();
 
         res.status(201).json({
             chat: {
@@ -57,17 +57,17 @@ const post = asyncHandler ( async (req, res) => {
 
 const get = asyncHandler ( async (req, res) => {
     try {
-        var addaId = req.params.addaId;
+        var roomId = req.params.roomId;
 
-        const adda = await find(addaId);
-        if (!adda) {
+        const room = await find(roomId);
+        if (!room) {
             throw new Error("Problem");
         }
 
         res.status(201).json({
             token: req.token,
             session: req.session,
-            chat: adda.chat,
+            chat: room.chat,
         });
     }
     catch (err) {
@@ -78,23 +78,23 @@ const get = asyncHandler ( async (req, res) => {
 
 const clear = asyncHandler ( async (req, res) => {
     try {
-        var addaId = req.params.addaId;
+        var roomId = req.params.roomId;
 
-        const adda = await find(addaId);
-        if (!adda) {
+        const room = await find(roomId);
+        if (!room) {
             throw new Error("Problem");
         }
 
-        adda.chat = [
+        room.chat = [
             {
                 session: req.session,
                 text: `${req.session._id} cleared the chat`,
             }
         ];
-        await adda.save();
+        await room.save();
 
         res.status(201).json({
-            chat: adda.chat,
+            chat: room.chat,
         });
     }
     catch (err) {
