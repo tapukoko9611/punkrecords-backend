@@ -5,37 +5,15 @@ const roomModel = mongoose.Schema(
         name: {
             type: String,
         },
-        createdBy: { type: Schema.Types.ObjectId, ref: "User", },
-        isPrivate: { type: Boolean, default: false },
-        password: { type: String },
-        // time: {
-        //     type: Date,
-        //     default: Date.now,
-        // },
-        // data: [
-        //     {
-        //         type:mongoose.Schema.Types.ObjectId,
-        //         ref: "Message",
-        //     },
-        // ],
-        // chat: [
-        //     {
-        //         session: {
-        //             type: mongoose.Schema.Types.ObjectId,
-        //             ref: "Session",
-        //         },
-        //         text: {
-        //             type: String,
-        //         },
-        //         time: {
-        //             type: Date,
-        //             default: Date.now,
-        //         },
-        //     },
-        // ],
+        createdBy: { 
+            type: mongoose.Schema.Types.ObjectId, ref: "User", },
+        isPrivate: { 
+            type: Boolean, },
+        password: { 
+            type: String },
         participants: {
             type: Map,
-            of: new Schema({
+            of: new mongoose.Schema({
                 isActive: { type: Boolean, default: true },
                 joinedOn: { type: Date, default: Date.now },
             }),

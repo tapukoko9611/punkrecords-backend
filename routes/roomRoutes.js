@@ -1,12 +1,21 @@
 const express = require("express");
 
 const { protect } = require("../middleware/authMiddleware.js");
-const { get, post, clear } = require("../controllers/roomController");
+const { exists, search, join, get, post, update, clear } = require("../controllers/roomController");
 
 const router = express.Router();
 
-router.route("/:roomId").get(protect, get);
-router.route("/:roomId").post(protect, post);
-router.route("/:roomId").delete(protect, clear);
+// Specific routes (that handle :roomName)
+router.route("/exists/:roomName").get(protect, exists);
+router.route("/search/:roomName").get(protect, search);
+router.route("/join/:roomName").get(protect, join);
+
+// General route that handles both :roomName and :count (comes after specific routes)
+router.route("/:roomName/:count").get(protect, get);
+
+// Routes for creating, updating, and deleting resources (no conflicts)
+router.route("/").post(protect, post);
+router.route("/").put(protect, update);
+router.route("/:roomName").delete(protect, clear);
 
 module.exports = router;

@@ -2,10 +2,6 @@ const mongoose = require("mongoose");
 
 const messageModel = mongoose.Schema(
     {
-        // session: {
-        //     type: mongoose.Schema.Types.ObjectId,
-        //     ref: "Session",
-        // },
         fromUser: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "User"

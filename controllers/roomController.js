@@ -1,52 +1,132 @@
 const asyncHandler = require("express-async-handler");
 
-const Device = require("../models/deviceModel");
-const Session = require("../models/sessionModel");
 const Room = require("../models/roomModel");
+const Message = require("../models/messageModel");
+const User = require("../models/userModel");
 
-const find = async (roomId) => {
+const exists = asyncHandler(async (req, res) => {
+    try {
+        var { roomName } = req.params;
+        var room = await Room.findOne({ roomName });
+        res.status(201).json({
+            status: room != null,
+            token: req.token
+        });
+    } catch (err) {
+        res.status(401);
+        throw new Error(err.message);
+    }
+});
+
+const find = async ({ roomName, userId, isPrivate, password }) => {
     try {
         var room = await Room.findOne({
-            name: roomId,
+            name: roomName,
         });
 
-        if(!room) {
+        if (!room) {
             room = await Room.create({
-                name: roomId,
+                name: roomName,
+                createdBy: userId,
+                isPrivate: isPrivate,
+                password: password,
+                participants: {
+                    userId: {
+                        isActive: true,
+                        joinedOn: Date.now()
+                    }
+                }
             });
-        }
 
+            await User.updateOne(
+                { _id: userId },  // Find the user by their ID
+                { $push: { createdRooms: room._id } }  // Push the new room ID
+            );
+        }
         return room;
     }
     catch (err) {
-        return null;
+        throw new Error(err.message);
     }
 };
 
-const post = asyncHandler ( async (req, res) => {
+const search = asyncHandler(async (req, res) => {
     try {
-        var roomId = req.params.roomId;
-        var { text } = req.body;
+        var { roomName } = req.params;
+        var userId = req.session;
 
-        const room = await find(roomId);
+        const room = await find({ roomName, userId, isPrivate: false, password: "" });
+
+        res.status(201).json({
+            room: room,
+            message: "here you go"
+        });
+    } catch (err) {
+        console.log(err);
+        res.status(401);
+        throw new Error(err.message);
+    }
+});
+
+const join = asyncHandler(async (req, res) => {
+    try {
+        var { roomName } = req.params;
+        var userId = req.session;
+
+        const room = await find({ roomName, userId, isPrivate: false, password: "" });
+        const user = await User.findById(userId);
+
+        if (!room.participants.has(userId)) {
+            room.participants.set(userId, {
+                isActive: true,
+                joinedOn: new Date()
+            });
+            await room.save();
+        }
+        if (!user.joinedRooms.has(room._id)) {
+            user.joinedRooms.set(room._id, new Date());
+            await user.save();
+        }
+
+        const messages = await Message.find({ roomId: room._id })
+            .sort({ createdAt: -1 })
+            .skip(Number(0))
+            .limit(Number(50));
+
+        res.status(201).json({
+            message: "Joined",
+            room: room,
+            messages: messages
+        });
+    } catch (err) {
+        res.status(401);
+        throw new Error(err.message);
+    }
+});
+
+const post = asyncHandler(async (req, res) => {
+    try {
+        var { text, roomName, replyTo } = req.body;
+        var userId = req.session;
+
+        const room = await find({ roomName, userId, isPrivate: false, password: "" });
         if (!room) {
             throw new Error("Problem");
         }
+        if (!room.participants.has(userId)) {
+            throw new Error("This is a private room");
+        }
 
-        room.chat = [
-            ...room.chat, 
-            {
-                session: req.session,
-                text: text,
-            },
-        ];
-        await room.save();
+        const msg = new Message({
+            fromUser: userId,
+            roomId: room._id,
+            body: text,
+            replyTo: replyTo
+        });
+        await msg.save();
 
         res.status(201).json({
-            chat: {
-                session: req.session,
-                text: text,
-            },
+            message: msg,
         });
     }
     catch (err) {
@@ -55,46 +135,23 @@ const post = asyncHandler ( async (req, res) => {
     }
 });
 
-const get = asyncHandler ( async (req, res) => {
+const get = asyncHandler(async (req, res) => {
     try {
-        var roomId = req.params.roomId;
+        var { roomName, count } = req.params;
+        var userId = req.session;
 
-        const room = await find(roomId);
+        const room = await find({ roomName, userId, isPrivate: false, password: "" });
         if (!room) {
             throw new Error("Problem");
         }
 
-        res.status(201).json({
-            token: req.token,
-            session: req.session,
-            chat: room.chat,
-        });
-    }
-    catch (err) {
-        res.status(401);
-        throw new Error(err.message);
-    }
-}); 
-
-const clear = asyncHandler ( async (req, res) => {
-    try {
-        var roomId = req.params.roomId;
-
-        const room = await find(roomId);
-        if (!room) {
-            throw new Error("Problem");
-        }
-
-        room.chat = [
-            {
-                session: req.session,
-                text: `${req.session._id} cleared the chat`,
-            }
-        ];
-        await room.save();
+        const messages = await Message.find({ roomId: room._id })
+            .sort({ createdAt: -1 })
+            .skip(Number(count))
+            .limit(Number(50));
 
         res.status(201).json({
-            chat: room.chat,
+            messages: messages
         });
     }
     catch (err) {
@@ -103,4 +160,55 @@ const clear = asyncHandler ( async (req, res) => {
     }
 });
 
-module.exports = { get, post, clear };
+const update = asyncHandler(async (req, res) => {
+    try {
+        var { roomName, password, isPrivate } = req.body;
+        var userId = req.session;
+
+        const room = await find({ roomName, userId, password: "", isPrivate: false });
+        if (!room) {
+            throw new Error("Problem");
+        }
+        if (room.createdBy != userId) {
+            throw new Error("No admin prevallages");
+        }
+
+        room.password = password;
+        room.isPrivate = isPrivate;
+        await room.save();
+
+        res.status(201).json({
+            room: room
+        });
+    } catch (err) {
+        res.status(401);
+        throw new Error(err.message);
+    }
+});
+
+const clear = asyncHandler(async (req, res) => {
+    try {
+        var { roomName } = req.body;
+        var userId = req.session;
+
+        const room = await find({ roomName, userId, password: "", isPrivate: false });
+        if (!room) {
+            throw new Error("Problem");
+        }
+        if (room.createdBy != userId) {
+            throw new Error("No admin prevallages");
+        }
+
+        await Message.deleteMany({ roomId: room._id });
+
+        res.status(201).json({
+            message: "Done"
+        });
+    }
+    catch (err) {
+        res.status(401);
+        throw new Error(err.message);
+    }
+});
+
+module.exports = { exists, search, join, get, post, update, clear };

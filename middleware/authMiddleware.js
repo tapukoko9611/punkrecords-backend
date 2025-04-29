@@ -1,43 +1,9 @@
 const jwt = require("jsonwebtoken");
 const asyncHandler = require("express-async-handler");
-const RequestIp = require('@supercharge/request-ip');
 
-const Session = require("../models/sessionModel");
-const Device = require("../models/deviceModel");
 const generateToken = require("../config/generateToken");
-const req = require("express/lib/request");
 const User = require("../models/userModel");
 
-const fun = async (ip_addr) => {
-    var find = await Device.findOne({ ip_addr: ip_addr });
-
-    if (!find) {
-        find = await Device.create({
-            ip_addr: ip_addr,
-        });
-    }
-
-    var session = await Session.create({
-        device: find._id,
-    });
-
-    await Device.findByIdAndUpdate(
-        find._id,
-        {
-            "$push": {
-                "sessions": session._id,
-            },
-        },
-    );
-
-    var token = generateToken(session._id);
-    session = session._id;
-
-    //const decoded = jwt.verify(token, 'JWT_SECRET');
-
-    console.log("Come verified the next time, will ya?");
-    return { token, session };
-}
 
 function createRandomString(length) {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -56,15 +22,18 @@ const createGuestUser = async (req, res) => {
             password: "",
             code: "",
             type: "Guest",
+            createdRooms: [],
+            joinedRooms: {},
+            joinedCalls: {},
+            joinedEditors: {},
         })
-        return {token: generateToken(user._id), session: user._id};
-    } catch(e) {
+        return { token: generateToken(user._id), session: user._id };
+    } catch (e) {
         throw e;
     }
 }
 
 const protect = asyncHandler(async (req, res, next) => {
-    const ip_addr = RequestIp.getClientIp(req);
 
     if (
         req.headers.authorization &&
@@ -83,43 +52,17 @@ const protect = asyncHandler(async (req, res, next) => {
             next();
         }
         catch (err) {
-            // await fun(ip_addr)
-            //     .then(({ token, session }) => {
-            //         req.token = token;
-            //         req.session = session;
-            //     })
-            //     .catch((err) => {
-            //         console.log(err.message);
-            //     })
-
-            await createGuestUser().then(({token, session}) => {
-                req.token=token;
-                req.session=session;
+            await createGuestUser().then(({ token, session }) => {
+                req.token = token;
+                req.session = session;
             }).catch((err) => console.log(err));
             next();
         }
     }
     else {
-        // try {
-
-        // }
-        // catch (err) {
-        //     res.status(401);
-        //     throw new Error(`${err.message}`);
-        // }
-
-        // await fun(ip_addr)
-        //     .then(({ token, session }) => {
-        //         req.token = token;
-        //         req.session = session;
-        //     })
-        //     .catch((err) => {
-        //         console.log(err.message);
-        //     })
-        
-        await createGuestUser().then(({token, session}) => {
-            req.token=token;
-            req.session=session;
+        await createGuestUser().then(({ token, session }) => {
+            req.token = token;
+            req.session = session;
         }).catch((err) => console.log(err));
         next();
     }

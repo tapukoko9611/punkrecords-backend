@@ -15,7 +15,7 @@ const userModel = mongoose.Schema(
             type: String,
             default: "Guest"
         },
-        createdRooms: [{ type: Schema.Types.ObjectId, ref: "Room" }],
+        createdRooms: [{ type: mongoose.Schema.Types.ObjectId, ref: "Room" }],
         joinedRooms: {
             type: Map,
             of: Date

@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const connectDB = async () => {
     try {
-        const conn = await mongoose.connect("mongodb+srv://root:wgDy2iU1mdoTlPZd@cluster0.dwknpqs.mongodb.net/WTF?retryWrites=true&w=majority", {
+        const conn = await mongoose.connect("mongodb+srv://tapukoko9611:PWUdSewJ9q7yc6Tt@cluster0.b4zsy.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0", {
             useNewUrlParser: true,
             useUnifiedTopology: true,
         });
@@ -14,11 +14,8 @@ const connectDB = async () => {
     }
 };
 
-const Device = require("../models/deviceModel");
-const Session = require("../models/sessionModel");
+const User = require("../models/userModel");
 const Room = require("../models/roomModel");
-//const Message = require("../models/messageModel");
-const Storage = require("../models/storageModel");
-//const Snippet = require("../models/snippetModel");
+const Message = require("../models/messageModel");
 
 module.exports = connectDB;
