@@ -4,10 +4,11 @@ const Room = require("../models/roomModel");
 const Message = require("../models/messageModel");
 const User = require("../models/userModel");
 
+// used to quickly look up if a room w that name exists during custom room creation.
 const exists = asyncHandler(async (req, res) => {
     try {
         var { roomName } = req.params;
-        var room = await Room.findOne({ roomName });
+        var room = await Room.findOne({ name: roomName });
         res.status(201).json({
             status: room != null,
             token: req.token
@@ -18,6 +19,7 @@ const exists = asyncHandler(async (req, res) => {
     }
 });
 
+// a common function to get/create a room w given roomname
 const find = async ({ roomName, userId, isPrivate, password }) => {
     try {
         var room = await Room.findOne({
@@ -50,6 +52,7 @@ const find = async ({ roomName, userId, isPrivate, password }) => {
     }
 };
 
+// called upon state init to get a room details
 const search = asyncHandler(async (req, res) => {
     try {
         var { roomName } = req.params;
@@ -68,6 +71,7 @@ const search = asyncHandler(async (req, res) => {
     }
 });
 
+// request to join the room
 const join = asyncHandler(async (req, res) => {
     try {
         var { roomName } = req.params;
@@ -104,6 +108,7 @@ const join = asyncHandler(async (req, res) => {
     }
 });
 
+// called to post a messsage to room (can be used w sockets?)
 const post = asyncHandler(async (req, res) => {
     try {
         var { text, roomName, replyTo } = req.body;
@@ -135,6 +140,7 @@ const post = asyncHandler(async (req, res) => {
     }
 });
 
+// used to get 50 messages after skipping already existing messages
 const get = asyncHandler(async (req, res) => {
     try {
         var { roomName, count } = req.params;
@@ -160,6 +166,7 @@ const get = asyncHandler(async (req, res) => {
     }
 });
 
+// used to modify room metadata
 const update = asyncHandler(async (req, res) => {
     try {
         var { roomName, password, isPrivate } = req.body;
@@ -186,6 +193,7 @@ const update = asyncHandler(async (req, res) => {
     }
 });
 
+// used to clear messages in a room
 const clear = asyncHandler(async (req, res) => {
     try {
         var { roomName } = req.body;

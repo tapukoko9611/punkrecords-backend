@@ -23,6 +23,7 @@ const createGuestUser = async (req, res) => {
             code: "",
             type: "Guest",
             createdRooms: [],
+            createdEditors: [],
             joinedRooms: {},
             joinedCalls: {},
             joinedEditors: {},
