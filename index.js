@@ -3,10 +3,7 @@ const cors = require('cors');
 
 const connectDB = require("./config/db");
 
-const roomRoutes = require("./routes/roomRoutes");
-// const storageRoutes = require("./routes/storageRoutes");
-// const Storage = require("./models/storageModel");
-const path = require("path");
+const roomRoutes = require("./routes/roomRoutes")
 
 
 const app = express();
@@ -15,7 +12,7 @@ app.use(cors());
 app.use(express.json());
 app.set("trust proxy", true);
 
-const socketIO = require("socket.io")(http, {
+const io = require("socket.io")(http, {
     cors: {
         origin: "*"
     }
@@ -25,39 +22,6 @@ const socketIO = require("socket.io")(http, {
 app.get("/trail", (req, res) => {
     res.json({ "msg": "The first step: doneee" });
 });
-
-// app.get("/wtf/ign/:query", async (req, res) => {
-//     try {
-//         var query = req.params.query;
-//         query = query.split("&");
-
-//         const storage = await Storage.findOne({name: query[0]});
-//         if (!storage) {
-//             res.status(201).json({
-//                 data: "Storage does not exist"
-//             });
-//         }
-
-//         var data;
-
-//         for (let i=0; i<storage.database.length; i++) {
-//             if (storage.database[i].name == query[1]) {
-//                 data = storage.database[i].data;
-//             }
-//         }
-
-//         res.status(201).json({
-//             data: data? data: "Container does not exist",
-//         });
-//     }
-//     catch (err) {
-//         res.status(401);
-//         throw new Error(err.message);
-//     }
-// })
-
-// app.use("/wtf/room", roomRoutes);
-// app.use("/wtf/storage", storageRoutes);
 
 
 // socketIO.on("connection", (socket) => {
@@ -114,17 +78,164 @@ app.get("/trail", (req, res) => {
 // });
 
 
-// app.use(express.static(path.join(__dirname, "../frontend/build")));
-// app.get("*", function (_, res) {
-//     res.sendFile(
-//         path.join(__dirname, "../frontend/build/index.html"),
-//         function (err) {
-//             res.status(500).send(err);
-//         }
-//     );
-// });
 
 app.use("/wtf/room", roomRoutes);
+
+// Global map: roomId => Set of active userIds
+const roomUserMap = new Map();
+
+// Tracks each socket's userId and rooms
+const socketUserMap = new Map(); // socket.id => { userId, rooms: Set }
+
+let peers = {};
+
+io.on("connection", (socket) => {
+    console.log("Socket connected:", socket.id);
+
+    socket.on("join-room", ({ roomId, userId }) => {
+        // Track socket to user and rooms
+        if (!socketUserMap.has(socket.id)) {
+            socketUserMap.set(socket.id, { userId, rooms: new Set() });
+        }
+
+        // Add user to the room's set
+        if (!roomUserMap.has(roomId)) {
+            roomUserMap.set(roomId, new Set());
+        }
+
+        roomUserMap.get(roomId).add(userId);
+        socket.join(roomId);
+        socketUserMap.get(socket.id).rooms.add(roomId);
+
+        // Broadcast updated room users
+        io.to(roomId).emit("room-users", {
+            roomId,
+            users: Array.from(roomUserMap.get(roomId)),
+            newUser: userId
+        });
+
+        console.log(`${userId} joined room ${roomId}`);
+    });
+
+    socket.on("join-editor", ({ editorId, userId }) => {
+        socket.join(editorId);
+
+        // activeUsers.set(userId, socket.id); // mark user as active
+
+        // Broadcast to the room
+        socket.to(editorId).emit("editor-user-status", {
+            // userId,
+            // status: "online",
+            // activeUsers: activeUsers,
+            newUser: userId
+        });
+
+        console.log(`${userId} joined editor ${editorId}`);
+    });
+
+    socket.on("send-message", ({ roomId, message, userId }) => {
+        io.to(roomId).emit("receive-message", {
+            userId,
+            message,
+        });
+    });
+
+    socket.on("editor-update", ({ editorId, content, userId }) => {
+        io.to(editorId).emit("receive-editor-update", {
+            userId,
+            content,
+        });
+    });
+
+    socket.on("disconnect", () => {
+        const userData = socketUserMap.get(socket.id);
+        if (!userData) return;
+
+        const { userId, rooms } = userData;
+        delete peers[socket.id];
+
+        for (const roomId of rooms) {
+            const userSet = roomUserMap.get(roomId);
+            if (userSet) {
+                userSet.delete(userId);
+                if (userSet.size === 0) {
+                    roomUserMap.delete(roomId);
+                } else {
+                    io.to(roomId).emit("room-users", {
+                        roomId,
+                        users: Array.from(userSet),
+                    });
+                }
+            }
+        }
+
+        socketUserMap.delete(socket.id);
+        console.log(`${userId} disconnected`);
+    });
+
+
+    // socket.on("join-call", (callId) => {
+    //     socket.join(callId);
+    //     socket.to(callId).emit("user-joined", socket.id);
+    // });
+
+    // // Relay offer
+    // socket.on("offer", ({ target, offer }) => {
+    //     io.to(target).emit("offer", { sender: socket.id, offer });
+    // });
+
+    // // Relay answer
+    // socket.on("answer", ({ target, answer }) => {
+    //     io.to(target).emit("answer", { sender: socket.id, answer });
+    // });
+
+    // // Relay ICE candidates
+    // socket.on("ice-candidate", ({ target, candidate }) => {
+    //     io.to(target).emit("ice-candidate", { sender: socket.id, candidate });
+    // });
+
+    socket.on('join-call', () => {
+        console.log(`${socket.id} joined the call`);
+        peers[socket.id] = socket;
+        const currentPeers = Object.keys(peers);
+        console.log('Current peers on server:', currentPeers);
+        io.emit('all-users', currentPeers);
+        console.log('Emitted all-users:', currentPeers, 'to all clients');
+    });
+
+    socket.on('offer', (data) => {
+        console.log(`Sending offer from ${socket.id} to ${data.target}`);
+        if (peers[data.target]) {
+            peers[data.target].emit('offer', { userId: socket.id, offer: data.offer });
+        } else {
+            console.log(`Target user ${data.target} not found`);
+        }
+    });
+
+    socket.on('answer', (data) => {
+        console.log(`Sending answer from ${socket.id} to ${data.target}`);
+        if (peers[data.target]) {
+            peers[data.target].emit('answer', { userId: socket.id, answer: data.answer });
+        } else {
+            console.log(`Target user ${data.target} not found`);
+        }
+    });
+
+    socket.on('ice-candidate', (data) => {
+        if (peers[data.target]) {
+            peers[data.target].emit('ice-candidate', { userId: socket.id, candidate: data.candidate });
+        } else {
+            console.log(`Target user ${data.target} not found`);
+        }
+    });
+
+});
+
+// Simple broadcast timer for testing
+setInterval(() => {
+    console.log("Emitted");
+    io.emit('heartbeat', 'Server heartbeat');
+}, 4000);
 
 http.listen(5000, async () => {
     try {

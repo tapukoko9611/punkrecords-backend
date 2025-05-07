@@ -9,7 +9,7 @@ const fileModel = new Schema({
     type: String, },
   fileSize: { 
     type: Number, }, // 10MB limit
-  uploadedBy: { 
+  createdBy: { 
     type: Schema.Types.ObjectId, ref: "User" },
   expiresAt: { 
     type: Date, },
@@ -20,3 +20,7 @@ const fileModel = new Schema({
   downloads: { 
     type: Number, default: 0 },
 }, { timestamps: true });
+
+const File = mongoose.model("File", fileModel);
+
+module.exports = File;

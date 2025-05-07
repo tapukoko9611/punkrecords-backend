@@ -28,6 +28,11 @@ const userModel = mongoose.Schema(
         joinedEditors: {
             type: Map,
             of: Date
+        },
+        createdFiles: [{ type: mongoose.Schema.Types.ObjectId, ref: "File" }],
+        joinedFiles: {
+            type: Map,
+            of: Date
         }
     },
     {

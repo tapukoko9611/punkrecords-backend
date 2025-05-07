@@ -16,17 +16,19 @@ function createRandomString(length) {
 
 const createGuestUser = async (req, res) => {
     try {
-        var userName = "Guest-" + createRandomString(7);
+        var userName = "Immigrant-" + createRandomString(7);
         const user = await User.create({
             userName: userName,
             password: "",
             code: "",
-            type: "Guest",
+            type: "Immigrant",
             createdRooms: [],
             createdEditors: [],
+            createdFiles: [],
             joinedRooms: {},
             joinedCalls: {},
             joinedEditors: {},
+            joinedFiles: {}
         })
         return { token: generateToken(user._id), session: user._id };
     } catch (e) {
