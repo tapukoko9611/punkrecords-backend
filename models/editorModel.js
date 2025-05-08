@@ -1,11 +1,11 @@
-import mongoose, { Schema, Document } from "mongoose";
+const mongoose = require("mongoose");
 
-const editorModel = Schema({
+const editorModel = mongoose.Schema({
   name: { 
     type: String, 
     required: true },
   createdBy: { 
-    type: Schema.Types.ObjectId, 
+    type: mongoose.Schema.Types.ObjectId, 
     ref: "User" },
   isPrivate: { 
     type: Boolean  },

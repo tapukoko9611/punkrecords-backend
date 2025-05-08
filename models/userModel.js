@@ -20,6 +20,7 @@ const userModel = mongoose.Schema(
             type: Map,
             of: Date
         },
+        createdCalls: [{ type: mongoose.Schema.Types.ObjectId, ref: "Call" }],
         joinedCalls: {
             type: Map,
             of: String

@@ -1,6 +1,6 @@
-import mongoose, { Schema, Document } from "mongoose";
+const mongoose = require("mongoose");
 
-const fileModel = new Schema({
+const fileModel = new mongoose.Schema({
   name: { 
     type: String, },
   filePath: { 
@@ -10,7 +10,7 @@ const fileModel = new Schema({
   fileSize: { 
     type: Number, }, // 10MB limit
   createdBy: { 
-    type: Schema.Types.ObjectId, ref: "User" },
+    type: mongoose.Schema.Types.ObjectId, ref: "User" },
   expiresAt: { 
     type: Date, },
   isPrivate: { 

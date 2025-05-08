@@ -1,0 +1,201 @@
+import { createUploadthing, type FileRoute } from "uploadthing/server";
+import { v4 as uuidv4 } from 'uuid';
+import { File } from './models/fileModel'; // Import your Mongoose model
+import { User } from './models/userModel'; // Import User model
+import { utapi } from 'uploadthing/server';
+
+
+const f = createUploadthing();
+
+// Define the types for metadata
+type MetadataType = {
+  userId: string;
+  fileName: string;
+};
+
+const fileUpload: FileRoute<MetadataType> = {
+  isProtected: async ({ req }) => {
+    // This is where you'd put your auth logic
+    // For now, we'll just check if a user is logged in
+    // const user = await auth();
+    // return !!user;
+    return true; // For this example, we'll allow all uploads
+  },
+  // We can configure the file size and type.
+  config: {
+    maxSize: "16MB", // Increased to 16MB
+  },
+  async onCreate({ metadata, file }) {
+    // This is where you can access the metadata from the request
+    console.log("onCreate => metadata:", metadata);
+    console.log("onCreate => file:", file);
+    // Do some database stuff
+    // await MyDatabase.create({
+    //   uploadId: file.id,
+    //   name: file.name,
+    // });
+    return { uploadId: uuidv4() };
+  },
+  onUploadComplete: async ({ metadata, file, createdUrls }) => {
+    // This will be called for each file that is done uploading
+    console.log("Upload completed for userId:", metadata.userId);
+    console.log("File url:", createdUrls);
+
+    const { userId, fileName } = metadata;
+
+     // Find if a file with the same name already exists
+    let existingFile = await File.findOne({ name: fileName });
+
+    if (!existingFile) {
+      // Create a new file entry in the database
+      const newFile = await File.create({
+        name: fileName,
+        filePath: createdUrls ? createdUrls[0] : '', // Store the URL from UploadThing
+        fileType: file.type,
+        fileSize: file.size,
+        createdBy: userId,
+      });
+
+      // Update the user's createdFiles array
+      await User.updateOne(
+        { _id: userId },
+        { $push: { createdFiles: newFile._id } }
+      );
+    } else if (existingFile && existingFile.filePath === "") {
+        //If file exists but filePath is empty, update it
+        existingFile.filePath = createdUrls ? createdUrls[0] : '';
+        existingFile.fileType = file.type;
+        existingFile.fileSize = file.size;
+        existingFile.createdBy = userId;
+        await existingFile.save();
+        await User.updateOne(
+          { _id: existingFile.createdBy },
+          { $push: { createdFiles: existingFile._id } }
+        );
+    }
+    //  else {
+    //   // Handle the case where a file with the same name already exists
+    //   //  and has a filePath.  You might want to:
+    //   //  - Return an error to the client
+    //   //  - Generate a unique name
+    //   //  - Overwrite (with caution, and consider versioning)
+    //   console.warn(`File with name ${fileName} already exists.`);
+    // }
+  },
+};
+
+export const ourFileRouter = {
+  fileUpload,
+};
+
+export type OurFileRouter = typeof ourFileRouter;
+
+
+
+
+you see ive unfortunately hit refresh and lost the total context of our p revious converstaion which is a very long joiurley. but befroe that i actually asked the old you to give me a foolproof context of our old journey so that i can give it to you to start where we left off!! heres what the old you gave me in 2 parts describing the complete backend and half completed forntend:
+
+Bruh, I totally get you! Losing all this context would be a major setback, like forgetting the cheat codes to your favorite game! Don't worry, I've got your back. Here's the ultimate rundown of our journey so far, designed to bring a freshly spawned me up to speed:
+
+Our Epic Backend Quest: A Contextual Saga
+
+Alright, imagine this: we're building a real-time collaboration platform, something super interactive where users can create and work together in different "spaces." We've been deep-diving into the backend, laying the foundation for all the magic to happen.
+
+The Core Modules and Their Workflows:
+
+We've architected the backend into several key modules, each with its own data model (thanks to Mongoose), service layer (containing the core business logic), controller layer (handling HTTP requests and responses), and Socket.IO event handling (for real-time communication). We've also established a consistent response structure: { isError, message, data } in our service layer to keep things organized.
+
+User Module (Your Domain):
+
+Goal: Manage user accounts, including checking for existing usernames, retrieving user data, signing up new users, updating profiles, and logging in.
+Workflow: Primarily driven by HTTP requests to the userController. The controller interacts directly with the User model for these operations.
+Key Features: Includes an exists check, a get function to retrieve user details and joined rooms/editors, signup, update, and login functionalities.
+Authentication: You've implemented a JWT-based authentication system. The generateToken function creates tokens, and the authMiddleware.js with its protect middleware verifies these tokens for protected HTTP routes, attaching the userId to req.session.
+Room Module (Our Collaborative Creation):
+
+Goal: Enable users to create and join virtual rooms for real-time interaction.
+Data Model (roomModel.js): Defines the structure for rooms (name, creator, privacy, password, participants as a Map of userId to dateJoined, messages with references to users).
+Service (roomService.js): Handles creating rooms (findOrCreateRoom), checking existence, joining rooms, posting new messages, retrieving messages, updating room metadata, and leaving rooms.
+Controller (roomController.js): Exposes HTTP endpoints for these operations, using asyncHandler for error handling and responding with the token and service results.
+Sockets (setupRoomSockets in socket.js): Manages real-time room interactions via WebSocket events (joining, sending/receiving messages, user presence). Uses Socket.IO "rooms" for broadcasting.
+Editor Module (Our Collaborative Canvas):
+
+Goal: Provide a real-time collaborative text editor.
+Data Model (editorModel.js - implicitly used in service): Defines the structure for shared editors (name, creator, privacy, password, participants as a Map, content, language).
+Service (editorService.js): Handles creating/finding editors (findEditor), checking existence, joining, updating content, retrieving content, updating metadata, and clearing content.
+Controller (editorController.js): Exposes HTTP endpoints for these operations, following the same pattern as the Room controller.
+Sockets (setupEditorSockets in socket.js): Manages real-time editing via WebSocket events (checking existence, joining, updating content, getting content, clearing content, updating metadata). Uses Socket.IO "rooms" specific to each editor.
+File Module (Our Shared Repository):
+
+Goal: Allow users to upload and share files.
+Data Model (fileModel.js): Defines the structure for files (name, creator, privacy, password, participants as a Map, filePath, fileType, fileSize, downloads).
+Service (fileService.js): Handles checking existence, joining, uploading (receiving filePath/URL), getting details (incrementing downloads), updating metadata, and clearing files. Includes special logic in findOrCreateFile to handle cases where a filename exists without an uploaded file.
+Controller (fileController.js): Exposes HTTP endpoints for these operations.
+Sockets (setupFileSockets in socket.js): Manages real-time file interactions (checking existence, joining, uploading metadata, getting details, updating metadata, clearing). Uses Socket.IO "rooms" for each file.
+Call Module (Our Voice Connection):
+
+Goal: Enable real-time audio/video calls between users.
+Data Model (callModel.js): Defines the structure for calls (name, creator, privacy, password, participants as a Map of userId to join status and time).
+Service (callService.js): Handles creating/finding calls (findOrCreateCall), checking existence, joining, getting details, updating metadata, and leaving calls.
+Controller (callController.js): Exposes HTTP endpoints for these operations.
+Sockets (setupCallSockets in socket.js): Manages call participation and includes a basic handler for WebRTC signaling (call:signal). Uses Socket.IO "rooms" for each call.
+The Grand Control Flow and Authentication:
+
+HTTP Requests: When the frontend makes an HTTP request to a protected route, the protect middleware verifies the JWT in the Authorization header. If valid, it attaches the userId to req.session, which is then used by the controllers to perform actions on behalf of that user. The controller calls the appropriate service function, which interacts with the database. The response, along with the req.token, is sent back to the frontend.
+WebSocket Connections: When a client connects via WebSocket, the setupSocket function in socket.js handles the initial connection. It uses authenticateSocket to verify a token sent by the client in the "authenticate" event. If the token is valid, the userId is associated with the socket object. If no token or an invalid token is provided, a guest user is created, and a guest token is sent back to the client. This userId is then used in the module-specific socket event handlers.
+Guest Users: We've implemented a system to create temporary "Immigrant" or guest users, both for HTTP requests without a valid token and for initial WebSocket connections without authentication. This allows anonymous access to certain features.
+Token Management: For HTTP, the server sends the token back with almost every response, allowing the frontend to maintain the current user's identity. For WebSockets, the userId is maintained on the server for the duration of the connection, and we've implemented sending the token back on key events like joining a room/editor/call.
+Login/Signup and Socket Updates: After a successful HTTP login or signup, the frontend should ideally re-authenticate the WebSocket connection by sending the new token in an "authenticate" event. The server will then update the socket.userId. Handling the user's presence in existing real-time contexts after login requires careful consideration on the server-side.
+The index.js Orchestrator:
+
+The index.js file is the heart of our backend. It sets up the Express app, the HTTP server, initializes Socket.IO, connects to the MongoDB database, applies middleware (like JSON parsing), mounts all our API routes, and starts the server listening on a specified port.
+
+In a Nutshell for the New Me:
+
+We've built a modular backend with clear separation of concerns, a consistent response structure, and a system to handle both authenticated and anonymous users via HTTP and WebSockets. We've laid the groundwork for real-time collaboration in rooms, shared editing, file sharing, and audio/video calls. The key is the consistent use of services, controllers, and Socket.IO handlers, all while managing user identity through JWTs and guest user creation.
+Phew! That was the epic saga so far. Hopefully, a fresh version of me can grasp the essence of our journey with that explanation. Now, are we really ready to conquer the frontend? Let me know when you're ready to charge into that new territory!
+
+
+
+It's crucial for the new me to also remember the frontend vision you laid out. Here's the summarized context, now including your frontend architecture plans:
+
+Continuing the Saga: The Frontend Blueprint
+
+Beyond the backend groundwork, you've also architected a consistent and user-friendly frontend experience. Here's the key vision for the user interface:
+
+Consistent Module Layout:
+
+You've envisioned a common layout structure for each of the main collaboration modules (Rooms, Editor, Files, and potentially Calls). This will provide a unified and intuitive user experience. The common layout generally consists of:
+
+A Main Content Area: This is where the primary functionality of the module resides. For example, the chat interface in the Room, the text editor in the Editor, the file list in the Files, and the video/audio streams in the Calls.
+A Sidebar (Potentially): This could be used for navigation within the module, displaying lists of participants, settings, or other relevant information. The presence and content of the sidebar might vary slightly between modules.
+A Header/Toolbar: To display the module name, potentially controls for settings or actions specific to the module (e.g., leaving a room, changing editor language, sorting files).
+Styling and Colors:
+
+You have a specific aesthetic in mind for the platform, characterized by:
+
+A Consistent Color Palette: You likely have primary and secondary colors defined, which will be used across all modules for branding and visual coherence.
+Clean and Modern Styling: The overall design should feel contemporary and uncluttered, focusing on usability and readability.
+Consistent UI Elements: Buttons, forms, lists, and other UI components should have a uniform style across the application.
+Handling User Sessions (The Crucial Link):
+
+You've emphasized the importance of maintaining a consistent user session across both WebSocket and HTTP requests on the frontend. The strategy involves:
+
+Storing the User Token: Upon successful authentication (either via HTTP login/signup or receiving a guest token via WebSocket), the frontend will store this token securely (e.g., in localStorage or sessionStorage).
+Including Token in HTTP Requests: For all subsequent HTTP requests to protected backend routes, the frontend will include the stored token in the Authorization header (typically as a Bearer token: Authorization: Bearer <your_token>). This allows the backend to identify the user via the protect middleware.
+Initial WebSocket Authentication: When establishing the WebSocket connection, the frontend will attempt to send the stored token to the backend via the "authenticate" event. This allows the backend to associate the WebSocket connection with the correct user (or guest).
+Updating Token on WebSocket Events: The frontend will listen for "authenticated" events (and potentially other relevant socket responses) from the backend that might include a new or updated token, and it will update its stored token accordingly.
+Context Provider (The State Manager):
+
+You intend to use React's Context API (or a similar state management solution that you refer to as a "Context Provider") to manage the global state of your application, including:
+
+User Authentication State: Storing the current user's information (ID, username, token, etc.).
+Potentially Module-Specific State: Managing data relevant to the active module (e.g., the list of rooms, the content of the editor, the list of files).
+Socket Connection: Managing the state of the WebSocket connection.
+This Context Provider will make it easier to access and update user session information and other global data across different components of your frontend application, ensuring that both your HTTP request logic and your WebSocket event handling can access the current user's identity.
+
+In Short for the New Me (Frontend Edition):
+
+The frontend will have a consistent layout across modules, a defined modern style with a specific color palette, and will maintain user sessions across HTTP and WebSockets by storing and sending tokens. A Context Provider will be used for global state management, including user authentication.
+
+Alright, future me should have a solid understanding of the frontend plan now too! We're truly building a full-stack experience here. Now, are we ready to dive into the frontend? The stage is set! 🚀

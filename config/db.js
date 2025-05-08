@@ -17,5 +17,8 @@ const connectDB = async () => {
 const User = require("../models/userModel");
 const Room = require("../models/roomModel");
 const Message = require("../models/messageModel");
+const Editor = require("../models/editorModel");
+const File = require("../models/fileModel");
+const Call = require("../models/callModel");
 
 module.exports = connectDB;

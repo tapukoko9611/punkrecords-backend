@@ -1,0 +1,2123 @@
+ahhhhhh godd fucking damn this shittttt!!!!!!! i refreshed the browser by accident and my past conversation with you is gone. thats fucking frsustrating ahhhhhhh. now i should start again from beggining explaining what im doing and howw you helped a little in that and allllll
+
+
+
+
+
+
+you see im working on a project (MERN stack). you see ive worked on MERN stack previouslyh but its been a couple of years and i toatlly forgot the shit. i know i can catch on but im in hurry to finish off this project so that i can add this to resume and apply for fucking jobs which god know if ill ever land one T_T. and now you see im bad at ui/ux/frontend design too. so previously i told you that id prompt you how my ui (a page for example) should look and work, and ask you to provide the code, and you did and the i made alterifications to that and made it into my usable ones. (for context, im using tailwind css for frontend styling). now that everythings gone, ill provide you later witha few codes so that youd understand the coloring/styling and all.
+
+as for the project details, the project has 4 modules (5 including user) - room, editor, file, call. so now if you see, each model is based off some popular websites. for example room module is a chat room module that works on chatroom name(which is uniques), just like any chat apps like wahtsapp telegram or discord. the editor module is based off a live text editor, for example codeshare.io, which just like room works based on editor name(uniques). now then the file module is a single file uplload/download system over a file name (just like room and editor unique), and lastly the call module is a live audio/video call module which also is dependent on call name(same as the otheres, unique), that allows multiple user to participate. now you see this is the base of my project.
+
+now if i go into further details, the website is user-friendly, where user does not need to authenticate if he prefers to stay anoanymous. you see as soon as the user enter the website, (if there's no token for hm (auth-bearer/jwt if rest api call or jwt token if socket.io call for backend), we create a new user object with a random userId (but the type field in object is labeled "Guest/Alien") and proceed the user on that userId. now if he wants to sign up, we take details and assign the details to same user object and do the things. if he wants to login, we replace the temporary user object with his own user object and do the thing. all this to maintain user's anonymity if he wants.
+
+now a user can create rooms, editor, files by giving a name(if the name doesnt already exists), and later, anybody who enters the same name, can join in the respective rooms/editor/files. look a new one can be created only if the name doesnt exist, if it exixts, user will just be joining the already created one. now each of tehse modules has a private option, where the user who created that specific module(say a room), he can toggle private status on and off with a password, so anyone who isnt already a participant, should enter the password to join that room(if it is private).
+
+in room module, people can send messages, in editor module people can work on a single piece of text, and in file module, if a filename exists it means somebody uploaded a file to that name, so people can download it else, a user can uload a file and from then on let others download it.
+
+i think you get the basis
+
+
+
+
+
+okay, now that you get it, ill let you in on some frontend codes so that you get used to the styling and colors, etc:
+
+
+
+const RoomLayout = () => {
+
+  const [activeRoom, setActiveRoom] = useState("");
+
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  const [allRooms, setAllRooms] = useState(dummyRooms);
+
+
+
+  return (
+
+    <div className="flex h-screen w-full bg-gray-900 text-white overflow-hidden">
+
+      {/* Left Sidebar */}
+
+      {sidebarOpen && (
+
+        <Sidebar
+
+          activeComp={activeRoom}
+
+          setActiveComp={(roomName) => {setActiveRoom(roomName)}}
+
+          toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+
+          allComps={allRooms}
+
+          compName="room"
+
+        />
+
+      )}
+
+
+
+      {/* Right Room Panel */}
+
+      <RoomPanel
+
+        activeRoom={activeRoom}
+
+        sidebarOpen={sidebarOpen}
+
+        toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+
+        room={(activeRoom.length==0)? null: allRooms[activeRoom]}
+
+      />
+
+    </div>
+
+  );
+
+};
+
+
+
+const Sidebar = ({ activeComp, setActiveComp, toggleSidebar, allComps, compName }) => {
+
+  const [searchText, setSearchText] = useState("");
+
+  var [searchResult, setSearchResult] = useState(null);
+
+
+
+  return (
+
+    <div className="w-64 bg-gray-800 border-r border-gray-700 flex flex-col">
+
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700">
+
+        <button onClick={toggleSidebar}>
+
+          <FiX className="text-xl text-gray-400 hover:text-white transition" />
+
+        </button>
+
+        {/* <span className="font-bold text-lg">Comps</span> */}
+
+        <button onClick={() => {}}>
+
+          <FiHome className="text-xl text-gray-400 hover:text-white transition" />
+
+        </button>
+
+        <FiPlus className="text-xl text-green-400 hover:text-white cursor-pointer" title="New Comp" />
+
+      </div>
+
+
+
+      <SearchBar compName={compName} searchText={searchText} setSearchText={async (text) => {
+
+        setSearchText(text);
+
+        if (text.length === 0) {
+
+          setSearchResult(null);
+
+        }
+
+        else if (!(text in allComps)) {
+
+          var temp = await getSearchResult(text);
+
+          if (temp.length !== 0) {
+
+            setSearchResult(temp);
+
+          } else {
+
+            setSearchResult(null);
+
+          }
+
+        } else if (text in allComps) {
+
+          setSearchResult(null);
+
+        }
+
+      }} />
+
+
+
+      < CompList
+
+        activeComp={activeComp}
+
+        setActiveComp={setActiveComp}
+
+        comps={allComps}
+
+        searchText={searchText}
+
+        searchResult={searchResult}
+
+      />
+
+    </div>
+
+  );
+
+};
+
+
+
+const SearchBar = ({searchText, setSearchText, compName}) => {
+
+  var searchShow = `Search ${compName}s...`;
+
+
+
+  return (
+
+    <div className="px-4 py-2">
+
+      <input
+
+        type="text"
+
+        placeholder={searchShow}
+
+        className="w-full p-2 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+
+        value={searchText}
+
+        onChange={async (event) => {if(searchText!==event.target.value) await setSearchText(event.target.value)}}
+
+      />
+
+    </div>
+
+  )
+
+};
+
+
+
+const CompList = ({ comps, activeComp, setActiveComp, searchText, searchResult }) => (
+
+  <div className="flex-1 overflow-y-auto px-2">
+
+    {Object.entries(comps).map(([key, value]) => {
+
+      if (key.includes(searchText)) {
+
+        return <CompListItem
+
+          key={key}
+
+          compName={key}
+
+          active={key === activeComp}
+
+          onClick={() => setActiveComp(key)}
+
+        />;
+
+      } else {
+
+        return <></>;
+
+      }
+
+    })}
+
+    {
+
+      searchResult && <div className='flex-1 overflow-y-auto px-2'>
+
+        <br />
+
+        <h4>Other results -----</h4>
+
+        <CompListItem
+
+          key={searchResult}
+
+          compName={searchResult}
+
+          active={false}
+
+          onClick={() => { }}
+
+        />
+
+      </div>
+
+    }
+
+  </div>
+
+);
+
+
+
+const CompListItem = ({ compName, active, onClick }) => (
+
+  <div
+
+    className={`p-3 rounded-lg cursor-pointer transition-colors ${
+
+      active ? 'bg-blue-600 text-white' : 'hover:bg-gray-700 text-gray-300'
+
+    }`}
+
+    onClick={onClick}
+
+  >
+
+    {compName}
+
+  </div>
+
+);
+
+
+
+const RoomPanel = ({ activeRoom, toggleSidebar, sidebarOpen, room }) => {
+
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+
+  const [passwordInput, setPasswordInput] = useState('');
+
+  const [isPasswordCorrect, setIsPasswordCorrect] = useState(false);
+
+  const modalRef = useRef(null);
+
+
+
+  useEffect(() => {
+
+    if (room && room.isPrivate && !isPasswordCorrect) {
+
+      setShowPasswordModal(true);
+
+    } else {
+
+      setShowPasswordModal(false);
+
+    }
+
+  }, [room, isPasswordCorrect]);
+
+
+
+  const handlePasswordSubmit = () => {
+
+    if (room && room.password === passwordInput) {
+
+      setIsPasswordCorrect(true);
+
+      setShowPasswordModal(false);
+
+    } else {
+
+      alert('Incorrect password!');
+
+      setPasswordInput('');
+
+    }
+
+  };
+
+
+
+  const handleBackdropClick = (event) => {
+
+    if (modalRef.current && event.target === modalRef.current) {
+
+      setShowPasswordModal(false);
+
+    }
+
+  };
+
+
+
+  if (!room) {
+
+    return <div className="flex-1 flex flex-col items-center justify-center text-gray-500">No room selected.</div>;
+
+  }
+
+
+
+  return (
+
+    <div className="flex-1 flex flex-col relative">
+
+      <CompTopBar compName={activeRoom} toggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} comp={room} />
+
+      <div className={`${showPasswordModal && room.isPrivate && !isPasswordCorrect ? 'blur-lg' : ''} flex-1 flex flex-col`}>
+
+        {(!showPasswordModal || isPasswordCorrect) && (
+
+          <>
+
+            <MessageList room={room} />
+
+            <MessageInput room={room} />
+
+          </>
+
+        )}
+
+      </div>
+
+      {showPasswordModal && room.isPrivate && (
+
+        <div
+
+          ref={modalRef}
+
+          onClick={handleBackdropClick}
+
+          className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex justify-center items-center z-50"
+
+        >
+
+          <div className="bg-gray-800 p-8 rounded shadow-lg w-80">
+
+            <h2 className="text-xl font-semibold text-gray-300 mb-4">Enter Room Password</h2>
+
+            <input
+
+              type="password"
+
+              className="w-full p-3 mb-4 bg-gray-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+
+              placeholder="Password"
+
+              value={passwordInput}
+
+              onChange={(e) => setPasswordInput(e.target.value)}
+
+            />
+
+            <button
+
+              className="w-full py-3 bg-blue-600 rounded-md text-white font-semibold hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+
+              onClick={handlePasswordSubmit}
+
+            >
+
+              Enter
+
+            </button>
+
+          </div>
+
+        </div>
+
+      )}
+
+    </div>
+
+  );
+
+};
+
+
+
+const MessageList = ({ room }) => {
+
+  const messageRefs = useRef({});
+
+
+
+  const handleReplyClick = (repliedToId) => {
+
+    if (messageRefs.current[repliedToId]) {
+
+      messageRefs.current[repliedToId].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      // Optionally add highlighting effect here
+
+      // For example:
+
+      const element = messageRefs.current[repliedToId];
+
+      element.classList.add('bg-yellow-500'); // Add a highlight class
+
+      setTimeout(() => {
+
+        element.classList.remove('bg-yellow-500'); // Remove after a delay
+
+      }, 1500);
+
+    }
+
+  };
+
+
+
+  return (
+
+    <div className="flex-1 overflow-y-auto px-4 py-2 space-y-2 bg-gray-900">
+
+      {room.messages.map((msg) => (
+
+        <MessageItem
+
+          key={msg.id}
+
+          message={msg}
+
+          messages={room.messages} // Pass the entire messages array
+
+          onReplyClick={handleReplyClick} // Pass the handler function
+
+          ref={el => (messageRefs.current[msg.id] = el)} // Set up refs
+
+        />
+
+      ))}
+
+    </div>
+
+  );
+
+};
+
+
+
+const MessageItem = ({ message, messages, onReplyClick }) => {
+
+  const user = {
+
+    id: "user1" // Assuming the current user's ID is hardcoded for now
+
+  };
+
+  const isUser = message.fromUser === user.id;
+
+  const repliedToMessage = message.replyTo ? messages.find(msg => msg.id === message.replyTo) : null;
+
+
+
+  const handleReplyClick = () => {
+
+    if (repliedToMessage && onReplyClick) {
+
+      onReplyClick(repliedToMessage.id);
+
+    }
+
+  };
+
+
+
+  const messageTime = format(new Date(message.time), 'HH:mm'); // Format time
+
+  const messageDate = format(new Date(message.time), 'dd/MM/yy'); // Format date
+
+
+
+  return (
+
+    <div className={`flex flex-col ${isUser ? 'items-end' : 'items-start'} mb-2`}>
+
+      {repliedToMessage && (
+
+        <div
+
+          className={`px-3 py-1 mb-1 rounded-md text-sm cursor-pointer ${
+
+            isUser ? 'bg-blue-400 text-white' : 'bg-gray-600 text-gray-300'
+
+          }`}
+
+          onClick={handleReplyClick}
+
+        >
+
+          Replying to: <span className="italic">{repliedToMessage.text.substring(0, 20)}{repliedToMessage.text.length > 20 ? '...' : ''}</span>
+
+        </div>
+
+      )}
+
+      <div className={`max-w-xs sm:max-w-md px-4 py-2 rounded-lg shadow ${
+
+          isUser
+
+            ? 'bg-blue-600 text-white rounded-br-none'
+
+            : 'bg-gray-700 text-gray-100 rounded-bl-none'
+
+        }`}
+
+      >
+
+        {message.text}
+
+      </div>
+
+      <div className={`text-xs ${isUser ? 'text-right' : 'text-left'} mt-1 text-gray-400`}>
+
+        {messageDate} - {messageTime}
+
+      </div>
+
+    </div>
+
+  );
+
+};
+
+
+
+const MessageInput = () => {
+
+  const [input, setInput] = useState('');
+
+
+
+  const handleSend = () => {
+
+    if (input.trim() === '') return;
+
+    console.log('Send:', input);
+
+    setInput('');
+
+  };
+
+
+
+  return (
+
+    <div className="flex items-center p-4 bg-gray-800 border-t border-gray-700">
+
+      <input
+
+        type="text"
+
+        value={input}
+
+        onChange={(e) => setInput(e.target.value)}
+
+        placeholder="Type a message..."
+
+        className="flex-1 p-2 rounded-md bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+
+      />
+
+      <button
+
+        onClick={handleSend}
+
+        className="ml-3 p-2 rounded-full bg-blue-600 hover:bg-blue-700 transition"
+
+      >
+
+        <FiSend className="text-white text-xl" />
+
+      </button>
+
+    </div>
+
+  );
+
+};
+
+
+
+/* Hide the vertical scrollbar on the html element */
+
+html {
+
+  overflow-y: hidden;
+
+  /* Prevent vertical scrollbar */
+
+}
+
+
+
+/* If the body is causing it, try this instead or in addition */
+
+body {
+
+  overflow-y: hidden;
+
+  /* Prevent vertical scrollbar */
+
+}
+
+
+
+/* Styles for remote video containers */
+
+.remote-videos {
+
+  display: grid;
+
+  grid-template-columns: repeat(auto-fill, 200px);
+
+  gap: 10px;
+
+  margin-top: 20px;
+
+}
+
+
+
+.peer {
+
+  display: flex;
+
+  justify-content: center;
+
+  align-items: center;
+
+}
+
+
+
+.remote-video {
+
+  width: 100%;
+
+  height: auto;
+
+  max-width: 200px;
+
+  border-radius: 10px;
+
+}
+
+
+
+@keyframes fade-in {
+
+  from {
+
+    opacity: 0;
+
+  }
+
+
+
+  to {
+
+    opacity: 1;
+
+  }
+
+}
+
+
+
+.animate-fade-in {
+
+  animation: fade-in 0.2s ease-out forwards;
+
+}
+
+
+
+@tailwind base;
+
+@tailwind components;
+
+@tailwind utilities;
+
+
+
+
+
+
+
+body {
+
+    margin: 0;
+
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+
+        'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+
+        sans-serif;
+
+    -webkit-font-smoothing: antialiased;
+
+    -moz-osx-font-smoothing: grayscale;
+
+
+
+    overflow-y: scroll;
+
+    -ms-overflow-style: none;
+
+    /* IE and Edge */
+
+    scrollbar-width: none;
+
+}
+
+
+
+body::-webkit-scrollbar {
+
+    display: none;
+
+}
+
+
+
+code {
+
+    font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+
+        monospace;
+
+}
+
+
+
+
+
+i think you should get some things from these. first of all, every module almost has the same structure: left -> sidebar, right -> panel -> (top-> topnavbar, rest->content). now the sidebar includes searching option, toggle sidebar option and the list ofparicipated rooms/editors, etc and an option to create a new one (room/editor/etc).
+
+
+
+and theres one thing, i still havent implemented the flow, i do have it in mind, but theres still some backend work left before i get to that. and also one imortatnt aspect is that the website frontend routing is based on urls - like every module is routed only through urls. /room/:id, /editor/:id, /call/:id, /file/:id are the probably the only routing urls we're going to use and direct the user to appropritate module and also give the id (can be intercahngible with name) as parameter so that backend api calls can be made right from initState
+
+
+
+
+
+
+
+
+
+
+
+
+
+wait before continuing the frontend part, let me give you some backend code and then the flow of info and all
+
+
+
+
+
+
+
+
+
+
+here goes some of my models:
+
+const userModel = mongoose.Schema(
+
+    {
+
+        userName: {
+
+            type: String,
+
+        },
+
+        password: {
+
+            type: String,
+
+        },
+
+        code: {
+
+            type: String,
+
+        },
+
+        type: {
+
+            type: String,
+
+            default: "Immigrant"
+
+        },
+
+        createdRooms: [{ type: mongoose.Schema.Types.ObjectId, ref: "Room" }],
+
+        joinedRooms: {
+
+            type: Map,
+
+            of: Date
+
+        },
+
+        joinedCalls: {
+
+            type: Map,
+
+            of: String
+
+        },
+
+        createdEditors: [{ type: mongoose.Schema.Types.ObjectId, ref: "Editor" }],
+
+        joinedEditors: {
+
+            type: Map,
+
+            of: Date
+
+        },
+
+        createdFiles: [{ type: mongoose.Schema.Types.ObjectId, ref: "File" }],
+
+        joinedFiles: {
+
+            type: Map,
+
+            of: Date
+
+        }
+
+    },
+
+    {
+
+        timestamps: true
+
+    }
+
+);
+
+const roomModel = mongoose.Schema(
+
+    {
+
+        name: {
+
+            type: String,
+
+        },
+
+        createdBy: {
+
+            type: mongoose.Schema.Types.ObjectId, ref: "User", },
+
+        isPrivate: {
+
+            type: Boolean, },
+
+        password: {
+
+            type: String },
+
+        participants: {
+
+            type: Map,
+
+            of: new mongoose.Schema({
+
+                isActive: { type: Boolean, default: true },
+
+                joinedOn: { type: Date, default: Date.now },
+
+            }),
+
+            default: new Map(),
+
+        },
+
+        activeCall: { type: Boolean, default: false },
+
+    },
+
+    {
+
+        timestamps: true,
+
+    }
+
+);
+
+const messageModel = mongoose.Schema(
+
+    {
+
+        fromUser: {
+
+            type: mongoose.Schema.Types.ObjectId,
+
+            ref: "User"
+
+        },
+
+        roomId: {
+
+            type: mongoose.Schema.Types.ObjectId,
+
+            ref: "Room"
+
+        },
+
+        body: {
+
+            type: String,
+
+        },
+
+        replyTo: {
+
+            type: mongoose.Schema.Types.ObjectId,
+
+            ref: "Message"
+
+        },
+
+    },
+
+    {
+
+        timestamps: true,
+
+    }
+
+);
+
+const editorModel = Schema({
+
+  name: {
+
+    type: String,
+
+    required: true },
+
+  createdBy: {
+
+    type: Schema.Types.ObjectId,
+
+    ref: "User" },
+
+  isPrivate: {
+
+    type: Boolean  },
+
+  password: {
+
+    type: String },
+
+  content: {
+
+    type: String,},
+
+  language: {
+
+    type: String },
+
+  participants: {
+
+    type: Map,
+
+    of: Date,
+
+    default: new Map(),
+
+  },
+
+}, { timestamps: true });
+
+const fileModel = new Schema({
+
+  name: {
+
+    type: String, },
+
+  filePath: {
+
+    type: String, },
+
+  fileType: {
+
+    type: String, },
+
+  fileSize: {
+
+    type: Number, }, // 10MB limit
+
+  createdBy: {
+
+    type: Schema.Types.ObjectId, ref: "User" },
+
+  expiresAt: {
+
+    type: Date, },
+
+  isPrivate: {
+
+    type: Boolean, default: false },
+
+  password: {
+
+    type: String },
+
+  downloads: {
+
+    type: Number, default: 0 },
+
+}, { timestamps: true });
+
+
+
+and then my auth middleware:
+
+function createRandomString(length) {
+
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    let result = "";
+
+    for (let i = 0; i < length; i++) {
+
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+
+    }
+
+    return result;
+
+}
+
+
+
+const createGuestUser = async (req, res) => {
+
+    try {
+
+        var userName = "Immigrant-" + createRandomString(7);
+
+        const user = await User.create({
+
+            userName: userName,
+
+            password: "",
+
+            code: "",
+
+            type: "Immigrant",
+
+            createdRooms: [],
+
+            createdEditors: [],
+
+            createdFiles: [],
+
+            joinedRooms: {},
+
+            joinedCalls: {},
+
+            joinedEditors: {},
+
+            joinedFiles: {}
+
+        })
+
+        return { token: generateToken(user._id), session: user._id };
+
+    } catch (e) {
+
+        throw e;
+
+    }
+
+}
+
+
+
+const protect = asyncHandler(async (req, res, next) => {
+
+
+
+    if (
+
+        req.headers.authorization &&
+
+        req.headers.authorization.startsWith("Bearer")
+
+    ) {
+
+        try {
+
+            token = req.headers.authorization.split(" ")[1];
+
+
+
+            const decoded = jwt.verify(token, 'JWT_SECRET');
+
+
+
+            req.session = decoded.id;
+
+            req.token = token;
+
+
+
+            console.log("Not first time");
+
+
+
+            next();
+
+        }
+
+        catch (err) {
+
+            await createGuestUser().then(({ token, session }) => {
+
+                req.token = token;
+
+                req.session = session;
+
+            }).catch((err) => console.log(err));
+
+            next();
+
+        }
+
+    }
+
+    else {
+
+        await createGuestUser().then(({ token, session }) => {
+
+            req.token = token;
+
+            req.session = session;
+
+        }).catch((err) => console.log(err));
+
+        next();
+
+    }
+
+});
+
+
+
+one of the routes (room):
+
+const { protect } = require("../middleware/authMiddleware.js");
+
+const { exists, search, join, get, post, update, clear } = require("../controllers/roomController");
+
+
+
+const router = express.Router();
+
+
+
+// Specific routes (that handle :roomName)
+
+router.route("/exists/:roomName").get(protect, exists);
+
+router.route("/search/:roomName").get(protect, search);
+
+router.route("/join/:roomName").get(protect, join);
+
+
+
+// General route that handles both :roomName and :count (comes after specific routes)
+
+router.route("/:roomName/:count").get(protect, get);
+
+
+
+// Routes for creating, updating, and deleting resources (no conflicts)
+
+router.route("/").post(protect, post);
+
+router.route("/").put(protect, update);
+
+router.route("/:roomName").delete(protect, clear);
+
+
+
+and then one of the controllers (room):
+
+const exists = asyncHandler(async (req, res) => {
+
+    try {
+
+        const { roomName } = req.params;
+
+        const room = await roomService.checkRoomExists(roomName);
+
+        res.status(200).json({
+
+            token: req.token,
+
+            isError: fasle,
+
+            message: room == null,
+
+            data: {
+
+                room: room,
+
+                messages: []
+
+            }
+
+        });
+
+    } catch (err) {
+
+        res.status(500).json({
+
+            token: req.token,
+
+            isError: true,
+
+            message: err.message || err || "Something went wrong",
+
+            data: null
+
+        });
+
+    }
+
+});
+
+
+
+const search = asyncHandler(async (req, res) => {
+
+    try {
+
+        const { roomName } = req.params;
+
+        const userId = req.session;
+
+        const room = await roomService.findOrCreateRoom({ roomName, userId, isPrivate: false, password: "" });
+
+        res.status(200).json({
+
+            token: req.token,
+
+            isError: fasle,
+
+            message: "Room Found",
+
+            data: {
+
+                room: room,
+
+                messages: []
+
+            }
+
+        });
+
+    } catch (err) {
+
+        res.status(500).json({
+
+            token: req.token,
+
+            isError: true,
+
+            message: err.message || err || "Something went wrong",
+
+            data: null
+
+        });
+
+    }
+
+});
+
+
+
+const join = asyncHandler(async (req, res) => {
+
+    try {
+
+        const { roomName } = req.params;
+
+        const userId = req.session;
+
+        const room = await roomService.joinRoom({ roomName, userId });
+
+        const messages = await roomService.getRoomMessages({ roomId: room._id });
+
+        res.status(200).json({
+
+            token: req.token,
+
+            isError: fasle,
+
+            message: "Joined Room",
+
+            data: {
+
+                room: room,
+
+                messages: messages
+
+            }
+
+        });
+
+    } catch (err) {
+
+        res.status(500).json({
+
+            token: req.token,
+
+            isError: true,
+
+            message: err.message || err || "Something went wrong",
+
+            data: null
+
+        });
+
+    }
+
+});
+
+
+
+const get = asyncHandler(async (req, res) => {
+
+    try {
+
+        const { roomName, count } = req.params;
+
+        const userId = req.session;
+
+        const room = await roomService.findOrCreateRoom({ roomName, userId, isPrivate: false, password: "" });
+
+        const messages = await roomService.getRoomMessages({ roomId: room._id, skip: Number(count) });
+
+        res.status(200).json({
+
+            token: req.token,
+
+            isError: fasle,
+
+            message: "Messages",
+
+            data: {
+
+                room: room,
+
+                messages: messages
+
+            }
+
+        });
+
+    } catch (err) {
+
+        res.status(500).json({
+
+            token: req.token,
+
+            isError: true,
+
+            message: err.message || err || "Something went wrong",
+
+            data: null
+
+        });
+
+    }
+
+});
+
+
+
+const post = asyncHandler(async (req, res) => {
+
+    try {
+
+        const { roomName, text, replyTo } = req.body;
+
+        const userId = req.session;
+
+        const message = await roomService.postMessage({ roomName, userId, text, replyTo });
+
+        res.status(200).json({
+
+            token: req.token,
+
+            isError: fasle,
+
+            message: "Message",
+
+            data: {
+
+                room: room,
+
+                messages: [message]
+
+            }
+
+        });
+
+    } catch (err) {
+
+        res.status(500).json({
+
+            token: req.token,
+
+            isError: true,
+
+            message: err.message || err || "Something went wrong",
+
+            data: null
+
+        });
+
+    }
+
+});
+
+
+
+const update = asyncHandler(async (req, res) => {
+
+    try {
+
+        const { roomName, password, isPrivate } = req.body;
+
+        const userId = req.session;
+
+        const room = await roomService.updateRoom({ roomName, userId, password, isPrivate });
+
+        res.status(200).json({
+
+            token: req.token,
+
+            isError: fasle,
+
+            message: "Updated",
+
+            data: {
+
+                room: room,
+
+                messages: []
+
+            }
+
+        });
+
+    } catch (err) {
+
+        res.status(500).json({
+
+            token: req.token,
+
+            isError: true,
+
+            message: err.message || err || "Something went wrong",
+
+            data: null
+
+        });
+
+    }
+
+});
+
+
+
+const clear = asyncHandler(async (req, res) => {
+
+    try {
+
+        const { roomName } = req.body;
+
+        const userId = req.session;
+
+        await roomService.clearRoomMessages({ roomName, userId });
+
+        res.status(200).json({
+
+            token: req.token,
+
+            isError: fasle,
+
+            message: "Cleared",
+
+            data: {
+
+                room: null,
+
+                messages: []
+
+            }
+
+        });
+
+    } catch (err) {
+
+        res.status(500).json({
+
+            token: req.token,
+
+            isError: true,
+
+            message: err.message || err || "Something went wrong",
+
+            data: null
+
+        });
+
+    }
+
+});
+
+
+
+and then one of the services (room):
+
+const findOrCreateRoom = async ({ roomName, userId, isPrivate, password }) => {
+
+    let room = await Room.findOne({ name: roomName });
+
+    if (!room) {
+
+        room = await Room.create({
+
+            name: roomName,
+
+            createdBy: userId,
+
+            isPrivate,
+
+            password,
+
+            participants: {
+
+                [userId]: {
+
+                    isActive: true,
+
+                    joinedOn: new Date(),
+
+                }
+
+            }
+
+        });
+
+        await User.updateOne({ _id: userId }, { $push: { createdRooms: room._id } });
+
+    }
+
+    return room;
+
+};
+
+
+
+const checkRoomExists = async (roomName) => {
+
+    return await Room.findOne({ name: roomName });
+
+};
+
+
+
+const joinRoom = async ({ roomName, userId }) => {
+
+    const room = await findOrCreateRoom({ roomName, userId, isPrivate: false, password: "" });
+
+    const user = await User.findById(userId);
+
+
+
+    if (!room.participants.has(userId)) {
+
+        room.participants.set(userId, { isActive: true, joinedOn: new Date() });
+
+        await room.save();
+
+    }
+
+    if (!user.joinedRooms.has(room._id)) {
+
+        user.joinedRooms.set(room._id, new Date());
+
+        await user.save();
+
+    }
+
+
+
+    return room;
+
+};
+
+
+
+const getRoomMessages = async ({ roomId, skip = 0, limit = 50 }) => {
+
+    return await Message.find({ roomId }).sort({ createdAt: -1 }).skip(skip).limit(limit);
+
+};
+
+
+
+const postMessage = async ({ roomName, userId, text, replyTo }) => {
+
+    const room = await findOrCreateRoom({ roomName, userId, isPrivate: false, password: "" });
+
+    if (!room.participants.has(userId)) throw new Error("Not a participant");
+
+
+
+    const msg = new Message({
+
+        fromUser: userId,
+
+        roomId: room._id,
+
+        body: text,
+
+        replyTo
+
+    });
+
+    await msg.save();
+
+    return msg;
+
+};
+
+
+
+const updateRoom = async ({ roomName, userId, password, isPrivate }) => {
+
+    const room = await findOrCreateRoom({ roomName, userId, isPrivate: false, password: "" });
+
+    if (!room || String(room.createdBy) !== userId) throw new Error("No admin privileges");
+
+
+
+    room.password = password;
+
+    room.isPrivate = isPrivate;
+
+    await room.save();
+
+    return room;
+
+};
+
+
+
+const clearRoomMessages = async ({ roomName, userId }) => {
+
+    const room = await findOrCreateRoom({ roomName, userId, isPrivate: false, password: "" });
+
+    if (!room || String(room.createdBy) !== userId) throw new Error("No admin privileges");
+
+
+
+    await Message.deleteMany({ roomId: room._id });
+
+    return true;
+
+};
+
+
+
+and then one of the sockets: (room):
+
+const setupRoomSockets = (io, socket, userId) => {
+
+    // 1. Frontend asks for room info (check if exists or create)
+
+    socket.on("room:check", async ({ roomName, token }) => {
+
+        // We should have userId available from the main connection handler
+
+        if (!userId) return;
+
+
+
+        try {
+
+            const roomExists = await roomService.checkRoomExists(roomName);
+
+            if (roomExists) {
+
+                socket.emit("room:checked", { room: roomExists });
+
+            } else {
+
+                const newRoom = await roomService.findOrCreateRoom({ roomName, userId, isPrivate: false, password: "" });
+
+                socket.emit("room:checked", { room: newRoom });
+
+            }
+
+        } catch (error) {
+
+            console.error("Error checking/creating room:", error);
+
+            socket.emit("room:error", { message: "Failed to check or create room" });
+
+        }
+
+    });
+
+
+
+    // 2. Frontend asks to join room
+
+    socket.on("room:join", async ({ roomName, token }) => {
+
+        if (!userId) return;
+
+
+
+        try {
+
+            const room = await roomService.joinRoom({ roomName, userId });
+
+            socket.join(room._id.toString()); // Join the Socket.IO room
+
+            socket.emit("room:joined", { roomId: room._id });
+
+            // Optionally emit to others in the room that a user joined
+
+            socket.to(room._id.toString()).emit("user:joined", { userId });
+
+        } catch (error) {
+
+            console.error("Error joining room:", error);
+
+            socket.emit("room:error", { message: "Failed to join room" });
+
+        }
+
+    });
+
+
+
+    // 3. Frontend asks for initial/latest messages
+
+    socket.on("room:messages:initial", async ({ roomId, token }) => {
+
+        if (!userId) return;
+
+
+
+        try {
+
+            const messages = await roomService.getRoomMessages({ roomId });
+
+            socket.emit("room:messages:initial", { roomId, messages });
+
+        } catch (error) {
+
+            console.error("Error fetching initial messages:", error);
+
+            socket.emit("room:error", { message: "Failed to fetch initial messages" });
+
+        }
+
+    });
+
+
+
+    // 4. Frontend sends a new message
+
+    socket.on("room:message:send", async ({ roomName, text, replyTo, token }) => {
+
+        if (!userId) return;
+
+
+
+        try {
+
+            const message = await roomService.postMessage({ roomName, userId, text, replyTo });
+
+            io.to(message.roomId.toString()).emit("room:message:new", message); // Emit to all in the room
+
+        } catch (error) {
+
+            console.error("Error sending message:", error);
+
+            socket.emit("room:error", { message: "Failed to send message" });
+
+        }
+
+    });
+
+
+
+    // 5. Frontend asks for more previous messages (pagination)
+
+    socket.on("room:messages:loadMore", async ({ roomId, skip, token }) => {
+
+        if (!userId) return;
+
+
+
+        try {
+
+            const messages = await roomService.getRoomMessages({ roomId, skip: Number(skip) });
+
+            socket.emit("room:messages:loadMore", { roomId, messages });
+
+        } catch (error) {
+
+            console.error("Error loading more messages:", error);
+
+            socket.emit("room:error", { message: "Failed to load more messages" });
+
+        }
+
+    });
+
+};
+
+
+
+and main socket file:
+
+const setupSocket = (io) => {
+
+    io.on("connection", async (socket) => {
+
+        console.log(`User connected: ${socket.id}`);
+
+
+
+        let userId;
+
+
+
+        // Authentication middleware for the socket connection
+
+        const authenticateSocket = async (token) => {
+
+            if (token) {
+
+                try {
+
+                    const decoded = jwt.verify(token, 'JWT_SECRET');
+
+                    userId = decoded.id;
+
+                    const user = await User.findById(userId);
+
+                    if (user) {
+
+                        socket.userId = userId; // Attach userId to the socket object
+
+                        console.log(`Socket ${socket.id} authenticated as user ${userId}`);
+
+                        return true;
+
+                    }
+
+                } catch (err) {
+
+                    console.error("Socket authentication error:", err);
+
+                }
+
+            }
+
+            // If no token or invalid token, create a guest user
+
+            const guestInfo = await createGuestUser();
+
+            userId = guestInfo.session;
+
+            socket.userId = userId;
+
+            socket.emit("guestUserCreated", { token: guestInfo.token, sessionId: guestInfo.session });
+
+            console.log(`Socket ${socket.id} created guest user ${userId}`);
+
+            return true; // For simplicity, we'll treat guest creation as successful auth for this socket
+
+        };
+
+
+
+        // Client emits this event with their token
+
+        socket.on("authenticate", async (data) => {
+
+            await authenticateSocket(data.token);
+
+        });
+
+
+
+        setupRoomSockets(io, socket, socket.userId);
+
+        //   setupCallSockets(io, socket, socket.userId);
+
+          setupEditorSockets(io, socket, socket.userId);
+
+        //   setupFileSockets(io, socket, socket.userId);
+
+       
+
+
+
+        socket.on("disconnect", () => {
+
+            console.log(`User disconnected: ${socket.id}`);
+
+        });
+
+    });
+
+};
+
+
+
+and then index.js:
+
+const http = require('http');
+
+const express = require('express');
+
+const app = express();
+
+const server = http.createServer(app);
+
+const socketIo = require('socket.io')(server, {
+
+  cors: {
+
+    origin: '*', // Adjust as needed for security
+
+    methods: ['GET', 'POST'],
+
+  },
+
+});
+
+const setupSocket = require('./socket'); // Assuming your socket logic is in './socket.js'
+
+const connectDB = require("./config/db");
+
+const dotenv = require('dotenv');
+
+const userRoutes = require('./routes/userRoutes');
+
+const roomRoutes = require('./routes/roomRoutes');
+
+const editorRoutes = require('./routes/editorRoutes');
+
+
+
+dotenv.config();
+
+
+
+// Connect to MongoDB
+
+await connectDB();
+
+
+
+// Middleware
+
+app.use(express.json());
+
+app.set("trust proxy", true);
+
+
+
+// API Routes
+
+app.use('/api/users', userRoutes);
+
+app.use('/api/rooms', roomRoutes);
+
+app.use('/api/editors', editorRoutes);
+
+
+
+// Socket.IO Setup
+
+setupSocket(socketIo); // Pass the Socket.IO instance to your setup function
+
+
+
+const PORT = process.env.PORT || 5000;
+
+
+
+server.listen(
+
+  PORT,
+
+  console.log(`Server running on port ${PORT}`)
+
+);
+
+
+
+
+
+
+
+now you see, most of the controllers of all modules have almost same core logic, adn the flow is same: (im taking room as example)
+
+1. the frontend sends a api to search for a roomName. now for every(most) request, the auth middleware checks if theres a user (valid jwt/auth token), if there is its okay, but if there isnt, we create atlest a guest user and then proceeds to use this for the rest of the session. now what we do for this api is, if a room exists on that naame, we return the room details. else, we create a room using that user, and then return that created room.
+
+2. now the frontedn verifies room details. if its public okay. if its private, it asks the user for passwords and validates it. then for both cases, the frontedn assks to join the user in the room. the join request, if user isnt already paricipant, adds the user to room's participants and also room to user's joinedRooms list, else proceed, and returns an okay kind of signal.
+
+3. upon recieving this signal, frontend acknowledges it, and then proceeds to call get api, which returns a list of (count numvber of) messages. now, intitally it skips 0 messages, but after scrolling in frontend, it further calls get again to retrieve message but this tiime skipping the already existing number of messages (its just a classic example).
+
+4. then theres this post api to post a message into room.
+
+5. theres this update room meta data that only the created user can do, and also the clear api that too>
+
+
+
+the editor and file (and probably call too) almost have the same apis/controllers doing amost the same fucntionalites, but change in their way of functionnig. the editor and room differs where room is operated on multipole messages in the room, while editor operates on a single text/content field in the editor object. the file module has only 2 options- upload if there already isnt a file on that name, else download the existing file on that name.
+
+
+
+you get the gist right?
+
+
+
+
+
+
+
+
+
+
+oh i forgot to mention, i first did all the controllers and mapped them ot routing and all, initlally working out only on http calls. later i started to shift towards socket.io hich is the better way, and hence the differences you can find (like how authMiddleware is agina defined and used in socket.js ) and all. you get it right.
+
+
+
+
+
+
+
+
+
