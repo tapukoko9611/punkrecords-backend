@@ -1,4 +1,4 @@
-// const callService = require('../services/callService');
+const callService = require('../services/callService');
 
 // const setupCallSockets = (io, socket, userId) => {
 //     // 1. Frontend asks for call info (check if exists or create)
@@ -76,10 +76,10 @@
 
 
 
-const setupCallSockets = (io, socket, userId, token) => {
+const setupCallSockets = (io, socket, getUserId, getToken) => {
     // 1. Frontend asks for call info (check if exists or create)
     socket.on("call:check", async ({ callName, token }) => {
-        if (!userId) return;
+        if (!getUserId()) return;
         try {
             const result = await callService.checkCallExists(callName);
             socket.emit("call:checked", result);
@@ -91,14 +91,14 @@ const setupCallSockets = (io, socket, userId, token) => {
 
     // 2. Frontend asks to join call
     socket.on("call:join", async ({ callName, token: clientToken }) => {
-        if (!userId) return;
+        if (!getUserId()) return;
         try {
-            const result = await callService.joinCall({ callName, userId });
+            const result = await callService.joinCall({ callName, userId: getUserId() });
             socket.join(`call-${result.data.call._id.toString()}`);
             socket.join(`call-signal-${callName}`); // Join a room for WebRTC signaling based on callName
-            socket.emit("call:joined", { ...result, token, socketId: socket.id });
-            io.to(`call-${result.data.call._id.toString()}`).emit("user:joined:call", { userId, socketId: socket.id });
-            io.to(`call-signal-${callName}`).emit("user:joined:signal", { userId, socketId: socket.id }); // Notify others in the signaling room
+            socket.emit("call:joined", { ...result, token: getToken(), socketId: socket.id });
+            io.to(`call-${result.data.call._id.toString()}`).emit("user:joined:call", { userId: getUserId(), socketId: socket.id });
+            io.to(`call-signal-${callName}`).emit("user:joined:signal", { userId: getUserId(), socketId: socket.id }); // Notify others in the signaling room
         } catch (error) {
             console.error("Error joining call:", error);
             socket.emit("call:error", { isError: true, message: "Failed to join call", data: null });
@@ -107,7 +107,7 @@ const setupCallSockets = (io, socket, userId, token) => {
 
     // 3. Frontend requests call details
     socket.on("call:get", async ({ callName, token }) => {
-        if (!userId) return;
+        if (!getUserId()) return;
         try {
             const result = await callService.getCallDetails(callName);
             socket.emit("call:details", result);
@@ -119,9 +119,9 @@ const setupCallSockets = (io, socket, userId, token) => {
 
     // 4. Frontend updates call metadata
     socket.on("call:meta:update", async ({ callName, password, isPrivate, token }) => {
-        if (!userId) return;
+        if (!getUserId()) return;
         try {
-            const result = await callService.updateCallMeta({ callName, userId, password, isPrivate });
+            const result = await callService.updateCallMeta({ callName, userId: getUserId(), password, isPrivate });
             socket.emit("call:meta:updated", result);
             io.to(`call-${result.data.call._id.toString()}`).emit("call:updated", { isPrivate: result.data.call.isPrivate });
         } catch (error) {
@@ -132,14 +132,14 @@ const setupCallSockets = (io, socket, userId, token) => {
 
     // 5. Frontend leaves the call
     socket.on("call:leave", async ({ callName, token }) => {
-        if (!userId) return;
+        if (!getUserId()) return;
         try {
-            const result = await callService.leaveCall({ callName, userId });
+            const result = await callService.leaveCall({ callName, userId: getUserId() });
             socket.leave(`call-${result.data.call._id.toString()}`);
             socket.leave(`call-signal-${callName}`); // Leave the signaling room
             socket.emit("call:left", result);
-            io.to(`call-${result.data.call._id.toString()}`).emit("user:left:call", { userId, socketId: socket.id });
-            io.to(`call-signal-${callName}`).emit("user:left:signal", { userId, socketId: socket.id }); // Notify others in the signaling room
+            io.to(`call-${result.data.call._id.toString()}`).emit("user:left:call", { userId: getUserId(), socketId: socket.id });
+            io.to(`call-signal-${callName}`).emit("user:left:signal", { userId: getUserId(), socketId: socket.id }); // Notify others in the signaling room
         } catch (error) {
             console.error("Error leaving call:", error);
             socket.emit("call:error", { isError: true, message: "Failed to leave call", data: null });

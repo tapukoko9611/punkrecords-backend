@@ -90,10 +90,10 @@ const editorService = require("../services/editorService");
 
 // module.exports = setupEditorSockets;
 
-const setupEditorSockets = (io, socket, userId) => {
+const setupEditorSockets = (io, socket, getUserId, getToken) => {
     // 1. Frontend asks for editor info (check if exists or create)
     socket.on("editor:check", async ({ editorName, token }) => {
-        if (!userId) return;
+        if (!getUserId()) return;
 
         try {
             const result = await editorService.checkEditorExists(editorName);
@@ -106,14 +106,14 @@ const setupEditorSockets = (io, socket, userId) => {
 
     // 2. Frontend asks to join editor
     socket.on("editor:join", async ({ editorName, token: clientToken }) => {
-        if (!userId) return;
+        if (!getUserId()) return;
 
         try {
-            const result = await editorService.joinEditor(editorName, userId);
+            const result = await editorService.joinEditor(editorName, getUserId());
             socket.join(`editor-${result.data.editor._id.toString()}`); // Join a specific editor room
-            socket.emit("editor:joined", {...result, token});
+            socket.emit("editor:joined", {...result, token: getToken()});
             // Optionally emit to others in the editor that a user joined
-            socket.to(`editor-${result.data.editor._id.toString()}`).emit("user:joined:editor", { userId });
+            socket.to(`editor-${result.data.editor._id.toString()}`).emit("user:joined:editor", { userId: getUserId() });
         } catch (error) {
             console.error("Error joining editor:", error);
             socket.emit("editor:error", { isError: true, message: "Failed to join editor", data: null });
@@ -122,10 +122,10 @@ const setupEditorSockets = (io, socket, userId) => {
 
     // 3. Frontend sends an update to the editor content
     socket.on("editor:content:update", async ({ editorName, text, token }) => {
-        if (!userId) return;
+        if (!getUserId()) return;
 
         try {
-            const result = await editorService.updateEditorContent({ editorName, userId, text });
+            const result = await editorService.updateEditorContent({ editorName, userId: getUserId(), text });
             if (!result.isError) {
                 io.to(`editor-${result.data.editor._id.toString()}`).emit("editor:content:updated", { content: result.data.editor.content });
             } else {
@@ -139,10 +139,10 @@ const setupEditorSockets = (io, socket, userId) => {
 
     // 4. Frontend asks for the current editor content
     socket.on("editor:content:get", async ({ editorName, token }) => {
-        if (!userId) return;
+        if (!getUserId()) return;
 
         try {
-            const result = await editorService.getEditor(editorName, userId);
+            const result = await editorService.getEditor(editorName, getUserId());
             socket.emit("editor:content:get", result);
         } catch (error) {
             console.error("Error getting editor content:", error);
@@ -152,10 +152,10 @@ const setupEditorSockets = (io, socket, userId) => {
 
     // 5. Frontend asks to clear the editor content
     socket.on("editor:content:clear", async ({ editorName, token }) => {
-        if (!userId) return;
+        if (!getUserId()) return;
 
         try {
-            const result = await editorService.clearEditor(editorName, userId);
+            const result = await editorService.clearEditor(editorName, getUserId());
             if (!result.isError) {
                 io.to(`editor-${result.data.editor._id.toString()}`).emit("editor:content:cleared"); // Emit to all in the editor
             } else {
@@ -169,10 +169,10 @@ const setupEditorSockets = (io, socket, userId) => {
 
     // 6. Frontend updates editor metadata (e.g., language, privacy)
     socket.on("editor:meta:update", async ({ editorName, password, isPrivate, language, token }) => {
-        if (!userId) return;
+        if (!getUserId()) return;
 
         try {
-            const result = await editorService.updateEditorMeta({ editorName, userId, password, isPrivate, language });
+            const result = await editorService.updateEditorMeta({ editorName, userId: getUserId(), password, isPrivate, language });
             if (!result.isError) {
                 io.to(`editor-${result.data.editor._id.toString()}`).emit("editor:meta:updated", { isPrivate: result.data.editor.isPrivate, language: result.data.editor.language });
             } else {

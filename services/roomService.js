@@ -139,6 +139,26 @@ const createResponse = (isError, message, data) => ({
     data
 });
 
+// const findOrCreateRoom = async ({ roomName, userId, isPrivate, password }) => {
+//     let room = await Room.findOne({ name: roomName });
+//     if (!room) {
+//         room = await Room.create({
+//             name: roomName,
+//             createdBy: userId,
+//             isPrivate,
+//             password,
+//             participants: {
+//                 [userId]: {
+//                     isActive: true,
+//                     joinedOn: new Date(),
+//                 }
+//             }
+//         });
+//         await User.updateOne({ _id: userId }, { $push: { createdRooms: room._id } });
+//         return createResponse(false, "Room Created", { room });
+//     }
+//     return createResponse(false, "Room Found", { room });
+// };
 const findOrCreateRoom = async ({ roomName, userId, isPrivate, password }) => {
     let room = await Room.findOne({ name: roomName });
     if (!room) {
@@ -154,17 +174,40 @@ const findOrCreateRoom = async ({ roomName, userId, isPrivate, password }) => {
                 }
             }
         });
-        await User.updateOne({ _id: userId }, { $push: { createdRooms: room._id } });
+        await User.updateOne(
+            { _id: userId },
+            {
+                $set: {
+                    [`rooms.${room._id}`]: { isAdmin: true, joinedOn: new Date(), name: roomName },
+                },
+            }
+        );
         return createResponse(false, "Room Created", { room });
     }
     return createResponse(false, "Room Found", { room });
 };
+
 
 const checkRoomExists = async (roomName) => {
     const room = await Room.findOne({ name: roomName });
     return createResponse(false, "Room Existence Checked", { room });
 };
 
+// const joinRoom = async ({ roomName, userId }) => {
+//     const { data: { room } } = await findOrCreateRoom({ roomName, userId, isPrivate: false, password: "" });
+//     const user = await User.findById(userId);
+
+//     if (!room.participants.has(userId)) {
+//         room.participants.set(userId, { isActive: true, joinedOn: new Date() });
+//         await room.save();
+//     }
+//     if (!user.joinedRooms.has(room._id)) {
+//         user.joinedRooms.set(room._id, new Date());
+//         await user.save();
+//     }
+
+//     return createResponse(false, "Joined Room", { room });
+// };
 const joinRoom = async ({ roomName, userId }) => {
     const { data: { room } } = await findOrCreateRoom({ roomName, userId, isPrivate: false, password: "" });
     const user = await User.findById(userId);
@@ -173,8 +216,8 @@ const joinRoom = async ({ roomName, userId }) => {
         room.participants.set(userId, { isActive: true, joinedOn: new Date() });
         await room.save();
     }
-    if (!user.joinedRooms.has(room._id)) {
-        user.joinedRooms.set(room._id, new Date());
+    if (!user.rooms.has(room._id)) {
+        user.rooms.set(room._id, { isAdmin: room.createdBy==user._id, joinedOn: new Date(), name: roomName });
         await user.save();
     }
 
@@ -183,7 +226,8 @@ const joinRoom = async ({ roomName, userId }) => {
 
 const getRoomMessages = async ({ roomId, skip = 0, limit = 50 }) => {
     const messages = await Message.find({ roomId }).sort({ createdAt: -1 }).skip(skip).limit(limit);
-    return createResponse(false, "Messages Retrieved", { messages });
+    const room = await Room.findById(roomId);
+    return createResponse(false, "Messages Retrieved", { room, messages });
 };
 
 const postMessage = async ({ roomName, userId, text, replyTo }) => {
@@ -199,7 +243,7 @@ const postMessage = async ({ roomName, userId, text, replyTo }) => {
         replyTo
     });
     await msg.save();
-    return createResponse(false, "Message Sent", { message: msg });
+    return createResponse(false, "Message Sent", { room, messages: [msg] });
 };
 
 const updateRoom = async ({ roomName, userId, password, isPrivate }) => {
@@ -221,7 +265,7 @@ const clearRoomMessages = async ({ roomName, userId }) => {
     }
 
     await Message.deleteMany({ roomId: room._id });
-    return createResponse(false, "Room Messages Cleared", null);
+    return createResponse(false, "Room Messages Cleared", {room});
 };
 
 

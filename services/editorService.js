@@ -119,6 +119,30 @@ const createResponse = (isError, message, data) => ({
 });
 
 // Create or find editor
+// const findEditor = async ({ editorName, userId, isPrivate, password }) => {
+//     let editor = await Editor.findOne({ name: editorName });
+
+//     if (!editor) {
+//         editor = await Editor.create({
+//             name: editorName,
+//             createdBy: userId,
+//             isPrivate,
+//             password,
+//             participants: {
+//                 [userId]: Date.now()
+//             },
+//             content: "",
+//             language: "txt"
+//         });
+
+//         await User.updateOne(
+//             { _id: userId },
+//             { $push: { createdEditors: editor._id } }
+//         );
+//         return createResponse(false, "Editor Created", { editor });
+//     }
+//     return createResponse(false, "Editor Found", { editor });
+// };
 const findEditor = async ({ editorName, userId, isPrivate, password }) => {
     let editor = await Editor.findOne({ name: editorName });
 
@@ -137,7 +161,11 @@ const findEditor = async ({ editorName, userId, isPrivate, password }) => {
 
         await User.updateOne(
             { _id: userId },
-            { $push: { createdEditors: editor._id } }
+            {
+                $set: {
+                    [`editors.${editor._id}`]: { isAdmin: true, joinedOn: new Date(), name: editorName },
+                },
+            }
         );
         return createResponse(false, "Editor Created", { editor });
     }
@@ -151,6 +179,22 @@ const checkEditorExists = async (editorName) => {
 };
 
 // Join editor
+// const joinEditor = async (editorName, userId) => {
+//     const { data: { editor } } = await findEditor({ editorName, userId, isPrivate: false, password: "" });
+//     const user = await User.findById(userId);
+
+//     if (!editor.participants.has(userId)) {
+//         editor.participants.set(userId, Date.now());
+//         await editor.save();
+//     }
+
+//     if (!user.joinedEditors.has(editor._id)) {
+//         user.joinedEditors.set(editor._id, new Date());
+//         await user.save();
+//     }
+
+//     return createResponse(false, "Joined Editor", { editor });
+// };
 const joinEditor = async (editorName, userId) => {
     const { data: { editor } } = await findEditor({ editorName, userId, isPrivate: false, password: "" });
     const user = await User.findById(userId);
@@ -160,8 +204,8 @@ const joinEditor = async (editorName, userId) => {
         await editor.save();
     }
 
-    if (!user.joinedEditors.has(editor._id)) {
-        user.joinedEditors.set(editor._id, new Date());
+    if (!user.editors.has(editor._id)) {
+        user.editors.set(editor._id, { isAdmin: editor.createdBy==user._id, joinedOn: new Date(), name: editorName });
         await user.save();
     }
 

@@ -4,11 +4,11 @@ const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
 
 
-const setupRoomSockets = (io, socket, userId) => {
+const setupRoomSockets = (io, socket, getUserId, getToken) => {
     // 1. Frontend asks for room info (check if exists or create)
     socket.on("room:check", async ({ roomName, token }) => {
         // We should have userId available from the main connection handler
-        if (!userId) return;
+        if (!getUserId()) return;
 
         try {
             const result = await roomService.checkRoomExists(roomName);
@@ -21,14 +21,14 @@ const setupRoomSockets = (io, socket, userId) => {
 
     // 2. Frontend asks to join room
     socket.on("room:join", async ({ roomName, token: clientToken }) => {
-        if (!userId) return;
+        if (!getUserId()) return;
 
         try {
-            const joinResult = await roomService.joinRoom({ roomName, userId });
-            socket.join(joinResult.data.room._id.toString()); // Join the Socket.IO room
-            socket.emit("room:joined", {...joinResult, token});
+            const joinResult = await roomService.joinRoom({ roomName, userId: getUserId() });
+            socket.join(`room-${joinResult.data.room._id.toString()}`); // Join the Socket.IO room
+            socket.emit("room:joined", {...joinResult, token: getToken()});
             // Optionally emit to others in the room that a user joined
-            socket.to(joinResult.data.room._id.toString()).emit("user:joined", { userId });
+            socket.to(`room-${joinResult.data.room._id.toString()}`).emit("user:joined", { userId: getUserId() });
         } catch (error) {
             console.error("Error joining room:", error);
             socket.emit("room:error", { isError: true, message: "Failed to join room", data: null });
@@ -37,7 +37,7 @@ const setupRoomSockets = (io, socket, userId) => {
 
     // 3. Frontend asks for initial/latest messages
     socket.on("room:messages:initial", async ({ roomId, token }) => {
-        if (!userId) return;
+        if (!getUserId()) return;
 
         try {
             const result = await roomService.getRoomMessages({ roomId });
@@ -50,12 +50,12 @@ const setupRoomSockets = (io, socket, userId) => {
 
     // 4. Frontend sends a new message
     socket.on("room:message:send", async ({ roomName, text, replyTo, token }) => {
-        if (!userId) return;
+        if (!getUserId()) return;
 
         try {
-            const result = await roomService.postMessage({ roomName, userId, text, replyTo });
+            const result = await roomService.postMessage({ roomName, userId: getUserId(), text, replyTo });
             if (!result.isError) {
-                io.to(result.data.message.roomId.toString()).emit("room:message:new", result.data.message); // Emit the message data
+                io.to(`room-${result.data.message.roomId.toString()}`).emit("room:message:new", result.data.message); // Emit the message data
             } else {
                 socket.emit("room:error", result);
             }
@@ -67,11 +67,11 @@ const setupRoomSockets = (io, socket, userId) => {
 
     // 5. Frontend asks for more previous messages (pagination)
     socket.on("room:messages:loadMore", async ({ roomId, skip, token }) => {
-        if (!userId) return;
+        if (!getUserId()) return;
 
         try {
             const result = await roomService.getRoomMessages({ roomId, skip: Number(skip) });
-            socket.emit("room:messages:loadMore", result);
+            socket.emit("room:messages:loadedMore", result);
         } catch (error) {
             console.error("Error loading more messages:", error);
             socket.emit("room:error", { isError: true, message: "Failed to load more messages", data: null });

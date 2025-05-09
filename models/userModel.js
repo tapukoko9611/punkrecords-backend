@@ -13,28 +13,44 @@ const userModel = mongoose.Schema(
         },
         type: {
             type: String,
-            default: "Immigrant"
+            default: "Immigrant" // only 2 options - Immigrant (guest user) & User (authenticated user)
         },
-        createdRooms: [{ type: mongoose.Schema.Types.ObjectId, ref: "Room" }],
-        joinedRooms: {
+        rooms: { // roomId: { isAdmin: Boolean, joinedOn: Date, name: String }
             type: Map,
-            of: Date
+            of: {
+                isAdmin: { type: Boolean, default: false },
+                joinedOn: { type: Date },
+                name: { type: String }
+            },
+            default: {}
         },
-        createdCalls: [{ type: mongoose.Schema.Types.ObjectId, ref: "Call" }],
-        joinedCalls: {
+        editors: { // editorId: { isAdmin: Boolean, joinedOn: Date, name: String }
             type: Map,
-            of: String
+            of: {
+                isAdmin: { type: Boolean, default: false },
+                joinedOn: { type: Date },
+                name: { type: String }
+            },
+            default: {}
         },
-        createdEditors: [{ type: mongoose.Schema.Types.ObjectId, ref: "Editor" }],
-        joinedEditors: {
+        files: { // fileId: { isAdmin: Boolean, joinedOn: Date, name: String }
             type: Map,
-            of: Date
+            of: {
+                isAdmin: { type: Boolean, default: false },
+                joinedOn: { type: Date },
+                name: { type: String }
+            },
+            default: {}
         },
-        createdFiles: [{ type: mongoose.Schema.Types.ObjectId, ref: "File" }],
-        joinedFiles: {
+        calls: { // callId: { isAdmin: Boolean, joinedOn: Date, name: String }
             type: Map,
-            of: Date
-        }
+            of: {
+                isAdmin: { type: Boolean, default: false },
+                joinedOn: { type: Date },
+                name: { type: String }
+            },
+            default: {}
+        },
     },
     {
         timestamps: true
