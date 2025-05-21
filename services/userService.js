@@ -3,6 +3,8 @@
 const User = require("../models/userModel");
 const Room = require("../models/roomModel");
 const Editor = require("../models/editorModel");
+const Call = require("../models/callModel");
+const File = require("../models/fileModel");
 const generateToken = require("../config/generateToken");
 
 const createUserResponse = (isError, message, data) => ({
@@ -23,6 +25,7 @@ const checkUserExists = async (userName) => {
 
 const getUserDetails = async (userId) => {
     try {
+        // console.log("service - Get user details: ", userId);
         const user = await User.findById(userId);
         if (!user) {
             return createUserResponse(true, "User not found", null);
@@ -32,36 +35,37 @@ const getUserDetails = async (userId) => {
         for (const [roomId, details] of user.rooms.entries()) {
             const room = await Room.findById(roomId);
             if (room) {
-                rooms[roomId] = { ...details, roomName: room.name };
+                rooms[roomId] = room;
             }
         }
 
         const editors = {};
-        for (const [editorId, details] of user.editors.entries()) {
-            const editor = await Editor.findById(editorId);
-            if (editor) {
-                editors[editorId] = { ...details, editorName: editor.name };
-            }
-        }
+        // for (const [editorId, details] of user.editors.entries()) {
+        //     const editor = await Editor.findById(editorId);
+        //     if (editor) {
+        //         editors[editorId] = { ...details, editorName: editor.name };
+        //     }
+        // }
 
         const files = {};
-        for (const [fileId, details] of user.files.entries()) {
-            // Assuming File model has a 'name' field
-            const file = await File.findById(fileId);
-            if (file) {
-                files[fileId] = { ...details, fileName: file.name };
-            }
-        }
+        // for (const [fileId, details] of user.files.entries()) {
+        //     // Assuming File model has a 'name' field
+        //     const file = await File.findById(fileId);
+        //     if (file) {
+        //         files[fileId] = { ...details, fileName: file.name };
+        //     }
+        // }
 
         const calls = {};
-        for (const [callId, details] of user.calls.entries()) {
-            // Assuming Call model has a 'name' field
-            const call = await Call.findById(callId);
-            if (call) {
-                calls[callId] = { ...details, callName: call.name };
-            }
-        }
+        // for (const [callId, details] of user.calls.entries()) {
+        //     // Assuming Call model has a 'name' field
+        //     const call = await Call.findById(callId);
+        //     if (call) {
+        //         calls[callId] = { ...details, callName: call.name };
+        //     }
+        // }
 
+        // console.log("service - Sent user details")
         return createUserResponse(false, "User Details Retrieved", { user, rooms, editors, files, calls });
     } catch (error) {
         console.error("Error fetching user details:", error);
@@ -71,6 +75,7 @@ const getUserDetails = async (userId) => {
 
 const signupUser = async (userId, userName, password, code) => {
     try {
+        // console.log("service - Signup user: ", userId);
         const existingUser = await User.findOne({ userName });
         if (existingUser) {
             return createUserResponse(true, "Username already exists", null);
@@ -86,7 +91,8 @@ const signupUser = async (userId, userName, password, code) => {
         user.code = code;
         user.type = "User";
         await user.save();
-
+        
+        // console.log("service - User signed up");
         return createUserResponse(false, "Signup successful", { user });
     } catch (error) {
         console.error("Error during signup:", error);
@@ -94,9 +100,10 @@ const signupUser = async (userId, userName, password, code) => {
     }
 };
 
-const updateUser = async (userId, password, code) => {
+const updateUser = async (userName, password, code) => {
     try {
-        const user = await User.findById(userId);
+        const user = await User.findOne({userName});
+        // console.log("service - Update userDetails: ", user?._id);
         if (!user || user.type !== "User") {
             return createUserResponse(true, "User not found or not a registered user", null);
         }
@@ -107,6 +114,7 @@ const updateUser = async (userId, password, code) => {
         user.password = password;
         await user.save();
 
+        // console.log("service - Updated userDetails");
         return createUserResponse(false, "User updated successfully", { user });
     } catch (error) {
         console.error("Error updating user:", error);
@@ -116,11 +124,13 @@ const updateUser = async (userId, password, code) => {
 
 const loginUser = async (userName, password) => {
     try {
+        // console.log("service - Login user: ", userName);
         const user = await User.findOne({ userName, password });
         if (!user) {
             return createUserResponse(true, "Invalid credentials", null);
         }
         const token = generateToken(user._id);
+        // console.log("service - User logged in");
         return createUserResponse(false, "Login successful", { user, token });
     } catch (error) {
         console.error("Error during login:", error);

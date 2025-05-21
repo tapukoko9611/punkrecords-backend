@@ -6,7 +6,7 @@ const { exists, search, join, get, post, update, clear } = require("../controlle
 const router = express.Router();
 
 // Specific routes (that handle :roomName)
-router.route("/exists/:roomName").get(protect, exists);
+router.route("/exists/:roomName").get(exists);
 router.route("/search/:roomName").get(protect, search);
 router.route("/join/:roomName").get(protect, join);
 

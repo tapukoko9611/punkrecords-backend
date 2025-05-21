@@ -169,14 +169,21 @@ const signup = asyncHandler(async (req, res) => {
 });
 
 const update = asyncHandler(async (req, res) => {
-    const { password, code } = req.body;
+    const { userName, password, code } = req.body;
     const userId = req.session;
-    const result = await userService.updateUser(userId, password, code);
-    res.status(200).json({ token: req.token, ...result });
+    const result = await userService.updateUser(userName, password, code);
+    if(!result.isError && userId===result.data.user._id) res.status(200).json({ token: req.token, ...result });
+    else if(!result.isError && userId!==result.data.user._id) {
+        result.data.user=null;
+        res.status(200).json({ token: req.token, ...result })
+    }
+    else {
+        res.status(200).json({ token: req.token, ...result })
+    }
 });
 
 const login = asyncHandler(async (req, res) => {
-    const { userName, password } = req.params;
+    const { userName, password } = req.query;
     const result = await userService.loginUser(userName, password);
     if (result.isError) {
         res.status(401).json({ token: req.token, ...result });

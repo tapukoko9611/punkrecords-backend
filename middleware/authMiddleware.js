@@ -14,7 +14,7 @@ function createRandomString(length) {
     return result;
 }
 
-const createGuestUser = async (req, res) => {
+const createGuestUser1 = async () => {
     try {
         var userName = "Immigrant-" + createRandomString(7);
         const user = await User.create({
@@ -36,6 +36,25 @@ const createGuestUser = async (req, res) => {
     }
 }
 
+const createGuestUser = async () => {
+    try {
+        var userName = "Immigrant-" + createRandomString(7);
+        const user = await User.create({
+            userName: userName,
+            password: "",
+            code: "",
+            type: "Immigrant",
+            rooms: {},
+            editors: {},
+            files: {},
+            calls: {}
+        })
+        return { token: generateToken(user._id), session: user._id };
+    } catch (e) {
+        throw e;
+    }
+}
+
 const protect = asyncHandler(async (req, res, next) => {
 
     if (
@@ -49,8 +68,6 @@ const protect = asyncHandler(async (req, res, next) => {
 
             req.session = decoded.id;
             req.token = token;
-
-            console.log("Not first time");
 
             next();
         }
@@ -71,4 +88,4 @@ const protect = asyncHandler(async (req, res, next) => {
     }
 });
 
-module.exports = { protect };
+module.exports = { protect, createGuestUser };

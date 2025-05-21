@@ -190,7 +190,7 @@ const findOrCreateRoom = async ({ roomName, userId, isPrivate, password }) => {
 
 const checkRoomExists = async (roomName) => {
     const room = await Room.findOne({ name: roomName });
-    return createResponse(false, "Room Existence Checked", { room });
+    return createResponse(false, "Room Existence Checked", { exists: !!room });
 };
 
 // const joinRoom = async ({ roomName, userId }) => {
@@ -217,7 +217,7 @@ const joinRoom = async ({ roomName, userId }) => {
         await room.save();
     }
     if (!user.rooms.has(room._id)) {
-        user.rooms.set(room._id, { isAdmin: room.createdBy==user._id, joinedOn: new Date(), name: roomName });
+        user.rooms.set(room._id, { isAdmin: room.createdBy == user._id, joinedOn: new Date(), name: roomName });
         await user.save();
     }
 
@@ -232,7 +232,9 @@ const getRoomMessages = async ({ roomId, skip = 0, limit = 50 }) => {
 
 const postMessage = async ({ roomName, userId, text, replyTo }) => {
     const { data: { room } } = await findOrCreateRoom({ roomName, userId, isPrivate: false, password: "" });
-    if (!room.participants.has(userId)) {
+    console.log(roomName, userId, text, replyTo);
+    if (!room.participants.has(userId.toString( ))) {
+        console.log(room.participants)
         return createResponse(true, "Not a participant", null);
     }
 
@@ -247,6 +249,7 @@ const postMessage = async ({ roomName, userId, text, replyTo }) => {
 };
 
 const updateRoom = async ({ roomName, userId, password, isPrivate }) => {
+    console.log(roomName, userId, password,)
     const { data: { room } } = await findOrCreateRoom({ roomName, userId, isPrivate: false, password: "" });
     if (!room || String(room.createdBy) !== userId) {
         return createResponse(true, "No admin privileges", null);
@@ -255,6 +258,7 @@ const updateRoom = async ({ roomName, userId, password, isPrivate }) => {
     room.password = password;
     room.isPrivate = isPrivate;
     await room.save();
+    console.log("Room details updated", roomName, isPrivate, password);
     return createResponse(false, "Room Updated", { room });
 };
 
@@ -265,7 +269,7 @@ const clearRoomMessages = async ({ roomName, userId }) => {
     }
 
     await Message.deleteMany({ roomId: room._id });
-    return createResponse(false, "Room Messages Cleared", {room});
+    return createResponse(false, "Room Messages Cleared", { room });
 };
 
 

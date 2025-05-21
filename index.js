@@ -4,11 +4,11 @@ const app = express();
 const server = http.createServer(app);
 const socketIo = require('socket.io')(server, {
   cors: {
-    origin: '*', // Adjust as needed for security
+    origin: '*',
     methods: ['GET', 'POST'],
   },
 });
-const setupSocket = require('./socket'); // Assuming your socket logic is in './socket.js'
+const setupSocket = require('./socket'); 
 const connectDB = require("./config/db");
 const dotenv = require('dotenv');
 const userRoutes = require('./routes/userRoutes');
@@ -19,19 +19,16 @@ const callRoutes = require('./routes/callRoutes');
 
 dotenv.config();
 
-// Middleware
 app.use(express.json());
 app.set("trust proxy", true);
 
-// API Routes
 app.use('/api/users', userRoutes);
 app.use('/api/rooms', roomRoutes);
 app.use('/api/editors', editorRoutes);
 app.use('/api/files', fileRoutes);
 app.use('/api/calls', callRoutes);
 
-// Socket.IO Setup
-setupSocket(socketIo); // Pass the Socket.IO instance to your setup function
+setupSocket(socketIo);
 
 const PORT = process.env.PORT || 5000;
 

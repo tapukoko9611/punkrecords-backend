@@ -284,8 +284,8 @@ const join = asyncHandler(async (req, res) => {
     const { roomName } = req.params;
     const userId = req.session;
     const result = await roomService.joinRoom({ roomName, userId });
-    const messagesResult = await roomService.getRoomMessages({ roomId: result.data.room._id });
-    res.status(200).json({ token: req.token, ...result, data: { ...result.data, ...messagesResult.data } });
+    // const messagesResult = await roomService.getRoomMessages({ roomId: result.data.room._id });
+    res.status(200).json({ token: req.token, ...result });
 });
 
 const get = asyncHandler(async (req, res) => {

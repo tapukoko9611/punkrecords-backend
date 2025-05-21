@@ -1,0 +1,19 @@
+todo - frontend
+
+1. first implement just the user things. i need to implement all the user module's fucntionality.
+1. + a. define user context provider + reducer
+1. + b. then define api requests for user auths (login, signup, update?, get)
+1. + c. then define sockets for user auths - authneticate, reauth, etc.
+1. + d. then also define and use authenditcate socket right after website init
+1. + e. then at last, start by implementing them all them in the user/auth modal - starting with sign-up, then login (also getting the loggedin user details) and emit a re-authenticate signal
+1. + f. just make everything related to the user work
+
+
+2. then move on to room module
+2. - a. define room context provider + reducer
+2. - b. then define api requests for room services
+2. - c. then define sockets for the same room services
+2. - ** see throught that the process of (search - verify - join - get) takes place accordingly 
+2. - d. then also define and use room socket client 
+2. - e. then at last, start by implementing them all in the room page - starting with exists, join, message
+2. - f. just make sure everything related to the room work
