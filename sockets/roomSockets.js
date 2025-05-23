@@ -10,10 +10,24 @@ const setupRoomSockets = (io, socket, getUserId, getToken) => {
         if (!getUserId()) return;
 
         try {
-            console.log("socket - Searching room");
+            // console.log("socket - Searching room");
             const result = await roomService.findOrCreateRoom({roomName, userId: getUserId(), isPrivate:privacy, password: password});
             socket.emit("room:searched", result);
-            console.log("socket - Searched room");
+            // console.log("socket - Searched room");
+        } catch (error) {
+            console.error("Error checking/creating room:", error);
+            socket.emit("room:error", { isError: true, message: "Failed to check or create room", data: null });
+        }
+    });
+
+    socket.on("room:update", async ({ roomName, privacy, password }) => {
+        if (!getUserId()) return;
+
+        try {
+            // console.log("socket - Searching room");
+            const result = await roomService.updateRoom({roomName, userId: getUserId(), isPrivate:privacy, password: password});
+            socket.emit("room:updated", result);
+            // console.log("socket - Searched room");
         } catch (error) {
             console.error("Error checking/creating room:", error);
             socket.emit("room:error", { isError: true, message: "Failed to check or create room", data: null });
@@ -21,15 +35,15 @@ const setupRoomSockets = (io, socket, getUserId, getToken) => {
     });
 
     // 2. Frontend asks to join room
-    socket.on("room:join", async ({ roomName, token: clientToken }) => {
+    socket.on("room:join", async ({ roomName, type="No", token: clientToken }) => {
         if (!getUserId()) return;
 
         try {
-            console.log("socket - Joining room");
+            // console.log("socket - Joining room");
             const joinResult = await roomService.joinRoom({ roomName, userId: getUserId() });
             socket.join(`room-${joinResult.data.room._id.toString()}`);
-            socket.emit("room:joined", {...joinResult, token: getToken()});
-            console.log("socket - Joined room");
+            socket.emit("room:joined", {...joinResult, token: getToken(), type: type});
+            // console.log("socket - Joined room");
             
             socket.to(`room-${joinResult.data.room._id.toString()}`).emit("user:joined", { userId: getUserId() });
         } catch (error) {
@@ -58,10 +72,8 @@ const setupRoomSockets = (io, socket, getUserId, getToken) => {
         if (!getUserId()) return;
 
         try {
-            console.log("socket - Send message");
             const result = await roomService.postMessage({ roomName, userId: getUserId(), text, replyTo });
             if (!result.isError) {
-            console.log("socket - Sent message");
                 io.to(`room-${result.data.messages[0].roomId.toString()}`).emit("room:message:new", result.data.messages); // Emit the message data
             } else {
                 socket.emit("room:error", result);
@@ -77,9 +89,9 @@ const setupRoomSockets = (io, socket, getUserId, getToken) => {
         if (!getUserId()) return;
 
         try {
-            console.log("socket - More messages");
+            // console.log("socket - More messages");
             const result = await roomService.getRoomMessages({ roomId, skip: Number(skip) });
-            console.log("socket - Mored messages");
+            // console.log("socket - Mored messages");
             socket.emit("room:messages:loadedMore", result);
         } catch (error) {
             console.error("Error loading more messages:", error);

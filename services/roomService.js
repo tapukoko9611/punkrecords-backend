@@ -224,7 +224,7 @@ const joinRoom = async ({ roomName, userId }) => {
     return createResponse(false, "Joined Room", { room });
 };
 
-const getRoomMessages = async ({ roomId, skip = 0, limit = 50 }) => {
+const getRoomMessages = async ({ roomId, skip = 0, limit = 10 }) => {
     const messages = await Message.find({ roomId }).sort({ createdAt: -1 }).skip(skip).limit(limit);
     const room = await Room.findById(roomId);
     return createResponse(false, "Messages Retrieved", { room, messages });
@@ -233,7 +233,7 @@ const getRoomMessages = async ({ roomId, skip = 0, limit = 50 }) => {
 const postMessage = async ({ roomName, userId, text, replyTo }) => {
     const { data: { room } } = await findOrCreateRoom({ roomName, userId, isPrivate: false, password: "" });
     console.log(roomName, userId, text, replyTo);
-    if (!room.participants.has(userId.toString( ))) {
+    if (!room.participants.has(userId.toString())) {
         console.log(room.participants)
         return createResponse(true, "Not a participant", null);
     }
@@ -249,9 +249,9 @@ const postMessage = async ({ roomName, userId, text, replyTo }) => {
 };
 
 const updateRoom = async ({ roomName, userId, password, isPrivate }) => {
-    console.log(roomName, userId, password,)
     const { data: { room } } = await findOrCreateRoom({ roomName, userId, isPrivate: false, password: "" });
-    if (!room || String(room.createdBy) !== userId) {
+    // console.log(roomName, userId, room.createdBy)
+    if (!room || String(room.createdBy) !== String(userId)) {
         return createResponse(true, "No admin privileges", null);
     }
 

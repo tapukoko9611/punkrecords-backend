@@ -7,6 +7,7 @@ const setupCallSockets = require("./sockets/callSockets");
 const setupEditorSockets = require("./sockets/editorSockets");
 const setupFileSockets = require("./sockets/fileSockets");
 const setupUserSockets = require("./sockets/userSockets");
+const roomService = require("./services/roomService");
 
 const setupSocket = (socketIo) => {
     socketIo.on("connection", async (socket) => {
@@ -29,14 +30,20 @@ const setupSocket = (socketIo) => {
                         for (const [roomId, details] of loggedInUser.rooms.entries()) {
                             const roomName = details.name;
                             if (roomName) {
-                                socket.join(`room-${roomId}`);
+                                var result = await roomService.joinRoom({ roomName, userId: decoded.id });
+                                // socket.join(`room-${roomId}`);
+                                // socket.emit("room:joined", { ...result, type: "Initial" });
+                                // result = await roomService.getRoomMessages({ roomId });
+                                // setTimeout(function () {
+                                //     socket.emit("room:messages:initial", result);
+                                // }, 2000);
                             }
                         }
 
                         for (const [editorId, details] of loggedInUser.editors.entries()) {
                             const editorName = details.name;
                             if (editorName) {
-                                socket.join(`editor-${editorId}`);
+                                // socket.join(`editor-${editorId}`);
                             }
                         }
 
@@ -82,14 +89,14 @@ const setupSocket = (socketIo) => {
                     for (const [roomId, details] of loggedInUser.rooms.entries()) {
                         const roomName = details.name;
                         if (roomName) {
-                            socket.join(`room-${roomId}`);
+                            // socket.join(`room-${roomId}`);
                         }
                     }
 
                     for (const [editorId, details] of loggedInUser.editors.entries()) {
                         const editorName = details.name;
                         if (editorName) {
-                            socket.join(`editor-${editorId}`);
+                            // socket.join(`editor-${editorId}`);
                         }
                     }
                 } else {
