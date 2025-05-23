@@ -7,7 +7,6 @@ const setupCallSockets = require("./sockets/callSockets");
 const setupEditorSockets = require("./sockets/editorSockets");
 const setupFileSockets = require("./sockets/fileSockets");
 const setupUserSockets = require("./sockets/userSockets");
-const roomService = require("./services/roomService");
 
 const setupSocket = (socketIo) => {
     socketIo.on("connection", async (socket) => {
@@ -26,28 +25,6 @@ const setupSocket = (socketIo) => {
                     const decoded = jwt.verify(clientToken, "JWT_SECRET");
                     const user = await User.findById(decoded.id);
                     if (user) {
-                        var loggedInUser = user;
-                        for (const [roomId, details] of loggedInUser.rooms.entries()) {
-                            const roomName = details.name;
-                            if (roomName) {
-                                var result = await roomService.joinRoom({ roomName, userId: decoded.id });
-                                // socket.join(`room-${roomId}`);
-                                // socket.emit("room:joined", { ...result, type: "Initial" });
-                                // result = await roomService.getRoomMessages({ roomId });
-                                // setTimeout(function () {
-                                //     socket.emit("room:messages:initial", result);
-                                // }, 2000);
-                            }
-                        }
-
-                        for (const [editorId, details] of loggedInUser.editors.entries()) {
-                            const editorName = details.name;
-                            if (editorName) {
-                                // socket.join(`editor-${editorId}`);
-                            }
-                        }
-
-                        // console.log("socket - Registered User: ", user._id)
                         return { userId: user._id, token: clientToken };
                     }
                 } catch (error) {
@@ -55,17 +32,14 @@ const setupSocket = (socketIo) => {
                 }
             }
             const { token, session } = await createGuestUser();
-            // console.log("socket - Guest User: ", session)
             return { userId: session, token: token };
         };
 
         socket.on("authenticate", async ({ token: clientToken }) => {
-            // console.log("socket - Asking for auth")
             const authResult = await authenticateSocket(clientToken);
             userId = authResult.userId;
             token = authResult.token;
             socket.emit("authenticated", { token });
-            // console.log("socket - Authenticated");
 
             setupRoomSockets(socketIo, socket, getUserId, getToken);
             setupEditorSockets(socketIo, socket, getUserId, getToken);
@@ -77,28 +51,12 @@ const setupSocket = (socketIo) => {
 
         socket.on("re-authenticate", async ({ token: newClientToken }) => {
             try {
-                // console.log("socket - Asked for re-authentication");
                 const decoded = jwt.verify(newClientToken, "JWT_SECRET");
                 const loggedInUser = await User.findById(decoded.id);
                 if (loggedInUser) {
                     userId = loggedInUser._id;
                     token = newClientToken;
                     socket.emit("re-authenticated", { token });
-                    // console.log("socket - Re authnticated");
-
-                    for (const [roomId, details] of loggedInUser.rooms.entries()) {
-                        const roomName = details.name;
-                        if (roomName) {
-                            // socket.join(`room-${roomId}`);
-                        }
-                    }
-
-                    for (const [editorId, details] of loggedInUser.editors.entries()) {
-                        const editorName = details.name;
-                        if (editorName) {
-                            // socket.join(`editor-${editorId}`);
-                        }
-                    }
                 } else {
                     console.error("Re-authentication failed: User not found.");
                     socket.emit("re-authentication-failed", { message: "Invalid token." });

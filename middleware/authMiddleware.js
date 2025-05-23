@@ -14,28 +14,6 @@ function createRandomString(length) {
     return result;
 }
 
-const createGuestUser1 = async () => {
-    try {
-        var userName = "Immigrant-" + createRandomString(7);
-        const user = await User.create({
-            userName: userName,
-            password: "",
-            code: "",
-            type: "Immigrant",
-            createdRooms: [],
-            createdEditors: [],
-            createdFiles: [],
-            joinedRooms: {},
-            joinedCalls: {},
-            joinedEditors: {},
-            joinedFiles: {}
-        })
-        return { token: generateToken(user._id), session: user._id };
-    } catch (e) {
-        throw e;
-    }
-}
-
 const createGuestUser = async () => {
     try {
         var userName = "Immigrant-" + createRandomString(7);

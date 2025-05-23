@@ -15,7 +15,7 @@ const userModel = mongoose.Schema(
             type: String,
             default: "Immigrant" // only 2 options - Immigrant (guest user) & User (authenticated user)
         },
-        rooms: { // roomId: { isAdmin: Boolean, joinedOn: Date, name: String }
+        rooms: { 
             type: Map,
             of: {
                 isAdmin: { type: Boolean, default: false },
@@ -24,7 +24,7 @@ const userModel = mongoose.Schema(
             },
             default: {}
         },
-        editors: { // editorId: { isAdmin: Boolean, joinedOn: Date, name: String }
+        editors: { 
             type: Map,
             of: {
                 isAdmin: { type: Boolean, default: false },
@@ -33,7 +33,7 @@ const userModel = mongoose.Schema(
             },
             default: {}
         },
-        files: { // fileId: { isAdmin: Boolean, joinedOn: Date, name: String }
+        files: { 
             type: Map,
             of: {
                 isAdmin: { type: Boolean, default: false },
@@ -42,7 +42,7 @@ const userModel = mongoose.Schema(
             },
             default: {}
         },
-        calls: { // callId: { isAdmin: Boolean, joinedOn: Date, name: String }
+        calls: { 
             type: Map,
             of: {
                 isAdmin: { type: Boolean, default: false },

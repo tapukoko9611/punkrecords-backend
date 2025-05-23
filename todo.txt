@@ -17,3 +17,12 @@ todo - frontend
 2. - d. then also define and use room socket client 
 2. - e. then at last, start by implementing them all in the room page - starting with exists, join, message
 2. - f. just make sure everything related to the room work
+
+
+2. - then move on to editor module
+2. - a. define editor context provider + reducer
+2. - b. then define api requests for editor services
+2. - c. then define sockets for editor services
+2. - d. then also define and use editor socket client
+2. - e. then at last, start implementing them all in the editor page - starting with the same process as room
+2. - f. just make sure everthing related to the editor work

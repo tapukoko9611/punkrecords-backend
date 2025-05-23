@@ -15,11 +15,14 @@ const editorModel = mongoose.Schema({
     type: String,},
   language: { 
     type: String },
-  participants: {
-    type: Map,
-    of: Date,
-    default: new Map(),
-  },
+            participants: {
+                type: Map,
+                of: new mongoose.Schema({
+                    isActive: { type: Boolean, default: true },
+                    joinedOn: { type: Date, default: Date.now },
+                }),
+                default: new Map(),
+            },
 }, { timestamps: true });
 
 const Editor = mongoose.model("Editor", editorModel);

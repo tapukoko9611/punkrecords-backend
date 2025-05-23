@@ -1,8 +1,4 @@
 const roomService = require("../services/roomService");
-const { createGuestUser } = require("../middleware/authMiddleware");
-const jwt = require("jsonwebtoken");
-const User = require("../models/userModel");
-
 
 const setupRoomSockets = (io, socket, getUserId, getToken) => {
     // 1. Frontend asks for room info (check if exists or create)
@@ -10,10 +6,8 @@ const setupRoomSockets = (io, socket, getUserId, getToken) => {
         if (!getUserId()) return;
 
         try {
-            // console.log("socket - Searching room");
             const result = await roomService.findOrCreateRoom({roomName, userId: getUserId(), isPrivate:privacy, password: password});
             socket.emit("room:searched", result);
-            // console.log("socket - Searched room");
         } catch (error) {
             console.error("Error checking/creating room:", error);
             socket.emit("room:error", { isError: true, message: "Failed to check or create room", data: null });
@@ -24,10 +18,8 @@ const setupRoomSockets = (io, socket, getUserId, getToken) => {
         if (!getUserId()) return;
 
         try {
-            // console.log("socket - Searching room");
             const result = await roomService.updateRoom({roomName, userId: getUserId(), isPrivate:privacy, password: password});
             socket.emit("room:updated", result);
-            // console.log("socket - Searched room");
         } catch (error) {
             console.error("Error checking/creating room:", error);
             socket.emit("room:error", { isError: true, message: "Failed to check or create room", data: null });
@@ -39,11 +31,9 @@ const setupRoomSockets = (io, socket, getUserId, getToken) => {
         if (!getUserId()) return;
 
         try {
-            // console.log("socket - Joining room");
             const joinResult = await roomService.joinRoom({ roomName, userId: getUserId() });
             socket.join(`room-${joinResult.data.room._id.toString()}`);
             socket.emit("room:joined", {...joinResult, token: getToken(), type: type});
-            // console.log("socket - Joined room");
             
             socket.to(`room-${joinResult.data.room._id.toString()}`).emit("user:joined", { userId: getUserId() });
         } catch (error) {
@@ -89,9 +79,7 @@ const setupRoomSockets = (io, socket, getUserId, getToken) => {
         if (!getUserId()) return;
 
         try {
-            // console.log("socket - More messages");
             const result = await roomService.getRoomMessages({ roomId, skip: Number(skip) });
-            // console.log("socket - Mored messages");
             socket.emit("room:messages:loadedMore", result);
         } catch (error) {
             console.error("Error loading more messages:", error);
