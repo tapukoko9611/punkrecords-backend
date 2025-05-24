@@ -196,7 +196,7 @@ const search = asyncHandler(async (req, res) => {
 const join = asyncHandler(async (req, res) => {
     const { fileName } = req.params;
     const userId = req.session;
-    const result = await fileService.joinFile(fileName, userId);
+    const result = await fileService.joinFile({fileName, userId});
     res.status(201).json({ token: req.token, ...result });
 });
 

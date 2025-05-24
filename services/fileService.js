@@ -7,42 +7,7 @@ const createResponse = (isError, message, data) => ({
     data
 });
 
-// const findOrCreateFile = async ({ fileName, userId, isPrivate, password, filePath = "", fileType = "", fileSize = 0 }) => {
-//     let file = await File.findOne({ name: fileName });
-
-//     if (!file) {
-//         file = await File.create({
-//             name: fileName,
-//             createdBy: userId,
-//             isPrivate: isPrivate || false,
-//             password: password || "",
-//             filePath: filePath || "",
-//             fileType: fileType || "",
-//             fileSize: fileSize || 0,
-//             participants: {
-//                 [userId]: Date.now()
-//             },
-//             downloads: 0
-//         });
-//         await User.updateOne({ _id: userId }, { $push: { createdFiles: file._id } });
-//         return createResponse(false, "File Created", { file });
-//     } else if (file.filePath === "") {
-//         const oldCreatedBy = file.createdBy;
-//         file.createdBy = userId;
-//         file.isPrivate = isPrivate || false;
-//         file.password = password || "";
-//         file.filePath = filePath || "";
-//         file.fileType = fileType || "";
-//         file.fileSize = fileSize || 0;
-//         file.downloads = 0; // Reset downloads for the new owner/upload
-//         await file.save();
-//         await User.updateOne({ _id: oldCreatedBy }, { $pull: { createdFiles: file._id } });
-//         await User.updateOne({ _id: userId }, { $push: { createdFiles: file._id } });
-//         return createResponse(false, "Existing file name claimed", { file });
-//     }
-//     return createResponse(false, "File Found", { file });
-// };
-const findOrCreateFile = async ({ fileName, userId, isPrivate, password, filePath = "", fileType = "", fileSize = 0 }) => {
+const findOrCreateFile = async ({ fileName, userId, isPrivate, password, fileUrl = "", fileType = "", fileSize = 0 }) => {
     let file = await File.findOne({ name: fileName });
 
     if (!file) {
@@ -51,11 +16,14 @@ const findOrCreateFile = async ({ fileName, userId, isPrivate, password, filePat
             createdBy: userId,
             isPrivate: isPrivate || false,
             password: password || "",
-            filePath: filePath || "",
+            fileUrl: fileUrl || "",
             fileType: fileType || "",
             fileSize: fileSize || 0,
             participants: {
-                [userId]: Date.now()
+                [userId]: {
+                    isActive: true,
+                    joinedOn: new Date(),
+                }
             },
             downloads: 0
         });
@@ -68,15 +36,15 @@ const findOrCreateFile = async ({ fileName, userId, isPrivate, password, filePat
             }
         );
         return createResponse(false, "File Created", { file });
-    } else if (file.filePath === "") {
+    } else if (file.fileUrl === "") {
         const oldCreatedBy = file.createdBy;
         file.createdBy = userId;
         file.isPrivate = isPrivate || false;
         file.password = password || "";
-        file.filePath = filePath || "";
+        file.fileUrl = fileUrl || "";
         file.fileType = fileType || "";
         file.fileSize = fileSize || 0;
-        file.downloads = 0; // Reset downloads for the new owner/upload
+        file.downloads = 0;
         await file.save();
         await User.updateOne({ _id: oldCreatedBy }, { $unset: { [`files.${file._id}`]: 1 } });
         await User.updateOne(
@@ -95,42 +63,27 @@ const findOrCreateFile = async ({ fileName, userId, isPrivate, password, filePat
 
 const checkFileExists = async (fileName) => {
     const file = await File.findOne({ name: fileName });
-    return createResponse(false, "File Existence Checked", { file });
+    return createResponse(false, "File Existence Checked", { exists: (!!file || (file && file?.fileUrl === "")) });
 };
 
-// const joinFile = async (fileName, userId) => {
-//     const { data: { file } } = await findOrCreateFile({ fileName, userId, isPrivate: false, password: "" });
-//     const user = await User.findById(userId);
 
-//     if (!file.participants.has(userId)) {
-//         file.participants.set(userId, Date.now());
-//         await file.save();
-//     }
-//     if (!user.joinedFiles.has(file._id)) {
-//         user.joinedFiles.set(file._id, new Date());
-//         await user.save();
-//     }
-//     return createResponse(false, "Joined File", { file });
-// };
-const joinFile = async (fileName, userId) => {
+const joinFile = async ({ fileName, userId }) => {
     const { data: { file } } = await findOrCreateFile({ fileName, userId, isPrivate: false, password: "" });
     const user = await User.findById(userId);
 
     if (!file.participants.has(userId)) {
-        file.participants.set(userId, Date.now());
+        file.participants.set(userId, { isActive: true, joinedOn: new Date() });
+        file.downloads = file.downloads+1;
         await file.save();
     }
     if (!user.files.has(file._id)) {
-        user.files.set(file._id, { isAdmin: file.createdBy==user._id, joinedOn: new Date(), name: fileName });
+        user.files.set(file._id, { isAdmin: file.createdBy == user._id, joinedOn: new Date(), name: fileName });
         await user.save();
     }
     return createResponse(false, "Joined File", { file });
 };
 
-const uploadFile = async ({ fileName, userId, filePath, fileSize, fileType }) => {
-    const { data: { file } } = await findOrCreateFile({ fileName, userId, filePath, fileSize, fileType });
-    return createResponse(false, "File Uploaded", { file });
-};
+
 
 const getFileDetails = async (fileName, userId) => {
     const file = await File.findOne({ name: fileName });
@@ -142,9 +95,25 @@ const getFileDetails = async (fileName, userId) => {
     return createResponse(false, "File Details Retrieved", { file });
 };
 
+// Post (update content)
+const updateFileContent = async ({ fileName, userId, fileUrl, fileType = "", fileSize = 0 }) => {
+    const { data: { file } } = await findOrCreateFile({ fileName, userId, isPrivate: false, password: "", fileUrl, fileType, fileSize });
+
+    if (!file.participants.has(userId.toString())) {
+        return createResponse(true, "Not a participant", null);
+    }
+
+    file.fileUrl = fileUrl;
+    file.fileType = fileType;
+    file.fileSize = fileSize;
+    file.downloads = 1;
+    await file.save();
+    return createResponse(false, "Content Updated", { file });
+};
+
 const updateFileMeta = async ({ fileName, userId, password, isPrivate }) => {
-    const { data: { file } } = await findOrCreateFile({ fileName, userId });
-    if (!file || String(file.createdBy) !== userId) {
+    const { data: { file } } = await findOrCreateFile({ fileName, userId, isPrivate: false, password: "" });
+    if (!file || String(file.createdBy) !== userId.toString()) {
         return createResponse(true, "No admin privileges", null);
     }
     file.password = password;
@@ -154,23 +123,25 @@ const updateFileMeta = async ({ fileName, userId, password, isPrivate }) => {
 };
 
 const clearFile = async ({ fileName, userId }) => {
-    const { data: { file } } = await findOrCreateFile({ fileName, userId });
-    if (!file || String(file.createdBy) !== userId) {
+    const { data: { file } } = await findOrCreateFile({ fileName, userId, isPrivate: false, password: "" });
+    if (!file || String(file.createdBy) !== userId.toString()) {
         return createResponse(true, "No admin privileges", null);
     }
-    file.filePath = "";
+    file.fileUrl = "";
     file.fileSize = 0;
     file.fileType = "";
+    file.downloads = 0;
     await file.save();
     return createResponse(false, "File Cleared", { file });
 };
 
 module.exports = {
+    findOrCreateFile,
     createResponse,
     checkFileExists,
     joinFile,
-    uploadFile,
     getFileDetails,
+    updateFileContent,
     updateFileMeta,
     clearFile
 };

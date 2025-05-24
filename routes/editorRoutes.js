@@ -9,7 +9,7 @@ router.route("/exists/:editorName").get(exists);
 router.route("/search/:editorName").get(protect, search);
 router.route("/join/:editorName").get(protect, join);
 
-router.route("/:editorName/:count").get(protect, get);
+router.route("/:editorName").get(protect, get);
 
 router.route("/").post(protect, post);
 router.route("/").put(protect, update);

@@ -47,6 +47,12 @@ const getUserDetails = async (userId) => {
         }
 
         const files = {};
+        for (const [fileId, details] of user.files.entries()) {
+            const file = await File.findById(fileId);
+            if(file) {
+                files[fileId] = file;
+            }
+        }
 
         const calls = {};
 
