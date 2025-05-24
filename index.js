@@ -5,7 +5,7 @@ const app = express();
 const server = http.createServer(app);
 const socketIo = require('socket.io')(server, {
   cors: {
-    origin: "https://punkrecords.onrender.com",
+    origin: "*",
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -24,7 +24,7 @@ dotenv.config();
 app.use(express.json());
 app.set("trust proxy", true);
 app.use(cors({
-  origin: "https://punkrecords.onrender.com",
+  origin: "*",
   credentials: true,
 }));
 
