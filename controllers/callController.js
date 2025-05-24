@@ -23,7 +23,8 @@ const join = asyncHandler(async (req, res) => {
 
 const get = asyncHandler(async (req, res) => {
     const { callName } = req.params;
-    const result = await callService.getCallDetails(callName);
+    const userId = req.session;
+    const result = await callService.getCallDetails(callName, userId);
     res.status(200).json({ token: req.token, ...result });
 });
 

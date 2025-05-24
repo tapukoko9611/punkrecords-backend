@@ -7,23 +7,6 @@ const createResponse = (isError, message, data) => ({
     data
 });
 
-// const findOrCreateCall = async ({ callName, userId, isPrivate = false, password = "" }) => {
-//     let call = await Call.findOne({ name: callName });
-//     if (!call) {
-//         call = await Call.create({
-//             name: callName,
-//             createdBy: userId,
-//             isPrivate,
-//             password,
-//             participants: {
-//                 [userId]: { joinedOn: new Date(), isActive: true }
-//             }
-//         });
-//         await User.updateOne({ _id: userId }, { $push: { createdCalls: call._id } });
-//         return createResponse(false, "Call Created", { call });
-//     }
-//     return createResponse(false, "Call Found", { call });
-// };
 const findOrCreateCall = async ({ callName, userId, isPrivate = false, password = "" }) => {
     let call = await Call.findOne({ name: callName });
     if (!call) {
@@ -54,21 +37,6 @@ const checkCallExists = async (callName) => {
     return createResponse(false, "Call Existence Checked", { call });
 };
 
-// const joinCall = async ({ callName, userId }) => {
-//     const { data: { call } } = await findOrCreateCall({ callName, userId, isPrivate: false, password: "" });
-//     const user = await User.findById(userId);
-
-//     if (!call.participants.has(userId)) {
-//         call.participants.set(userId, { joinedOn: new Date(), isActive: true });
-//         await call.save();
-//     }
-//     if (!user.joinedCalls.has(call._id)) {
-//         user.joinedCalls.set(call._id, new Date());
-//         await user.save();
-//     }
-
-//     return createResponse(false, "Joined Call", { call });
-// };
 const joinCall = async ({ callName, userId }) => {
     const { data: { call } } = await findOrCreateCall({ callName, userId, isPrivate: false, password: "" });
     const user = await User.findById(userId);
@@ -78,15 +46,15 @@ const joinCall = async ({ callName, userId }) => {
         await call.save();
     }
     if (!user.calls.has(call._id)) {
-        user.calls.set(call._id, { isAdmin: call.createdBy==user._id, joinedOn: new Date(), name: callName });
+        user.calls.set(call._id, { isAdmin: call.createdBy == user._id, joinedOn: new Date(), name: callName });
         await user.save();
     }
 
     return createResponse(false, "Joined Call", { call });
 };
 
-const getCallDetails = async (callName) => {
-    const call = await Call.findOne({ name: callName });
+const getCallDetails = async (callName, userId) => {
+    const call = await findOrCreateCall({ callName, userId, isPrivate: false, password: "" });
     if (!call) {
         return createResponse(true, "Call not found", null);
     }
@@ -95,7 +63,7 @@ const getCallDetails = async (callName) => {
 
 const updateCallMeta = async ({ callName, userId, password, isPrivate }) => {
     const { data: { call } } = await findOrCreateCall({ callName, userId });
-    if (!call || String(call.createdBy) !== userId) {
+    if (!call || String(call.createdBy) !== userId.toString()) {
         return createResponse(true, "No admin privileges", null);
     }
     call.password = password;
@@ -104,18 +72,8 @@ const updateCallMeta = async ({ callName, userId, password, isPrivate }) => {
     return createResponse(false, "Call Metadata Updated", { call });
 };
 
-// const leaveCall = async ({ callName, userId }) => {
-//     const call = await Call.findOne({ name: callName });
-//     if (!call || !call.participants.has(userId)) {
-//         return createResponse(true, "Not a participant", null);
-//     }
-//     call.participants.delete(userId);
-//     await call.save();
-//     await User.updateOne({ _id: userId }, { $pull: { joinedCalls: call._id } });
-//     return createResponse(false, "Left Call", { call });
-// };
 const leaveCall = async ({ callName, userId }) => {
-    const call = await Call.findOne({ name: callName });
+    const call = await findOrCreateCall({ callName, userId, isPrivate: false, password: "" });
     if (!call || !call.participants.has(userId)) {
         return createResponse(true, "Not a participant", null);
     }

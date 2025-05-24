@@ -3,22 +3,17 @@ const mongoose = require('mongoose');
 const callSchema = new mongoose.Schema({
     name: {
         type: String,
-        required: true,
-        unique: true,
-        trim: true
+        required: true
     },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
+        ref: "User"
     },
     isPrivate: {
-        type: Boolean,
-        default: false
+        type: Boolean
     },
     password: {
-        type: String,
-        trim: true
+        type: String
     },
     participants: {
         type: Map, // userId: { joinedOn: Date, isActive: Boolean }
@@ -28,12 +23,6 @@ const callSchema = new mongoose.Schema({
         },
         default: {}
     },
-    startedAt: {
-        type: Date
-    },
-    endedAt: {
-        type: Date
-    }
 }, { timestamps: true });
 
 const Call = mongoose.model('Call', callSchema);

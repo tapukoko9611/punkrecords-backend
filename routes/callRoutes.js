@@ -10,11 +10,13 @@ const {
     leave
 } = require('../controllers/callController');
 
-router.get('/exists/:callName', protect, exists);
+router.get('/exists/:callName', exists);
 router.get('/search/:callName', protect, search);
 router.post('/join/:callName', protect, join);
+
 router.get('/:callName', protect, get);
-router.put('/update', protect, update);
-router.delete('/leave/:callName', protect, leave);
+
+router.put('/', protect, update);
+router.delete('/:callName', protect, leave);
 
 module.exports = router;

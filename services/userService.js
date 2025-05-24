@@ -55,6 +55,12 @@ const getUserDetails = async (userId) => {
         }
 
         const calls = {};
+        for (const [callId, details] of user.calls.entries()) {
+            const call = await Call.findById(callId);
+            if(call) {
+                calls[callId] = call;
+            }
+        }
 
         return createUserResponse(false, "User Details Retrieved", { user, rooms, editors, files, calls });
     } catch (error) {
